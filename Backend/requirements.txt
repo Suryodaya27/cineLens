@@ -1,0 +1,37 @@
+# Core
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# ML / Detection
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0
+torchvision>=0.15.0
+pillow>=10.0.0
+
+# Face recognition
+insightface>=0.7.3
+onnxruntime>=1.16.0
+
+# Vector database
+psycopg2-binary>=2.9.9
+
+# Vision LLM
+ollama>=0.1.0
+
+# Shopping / scraping
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+google-search-results>=2.4.2
+
+# Background removal (optional)
+rembg>=2.0.50
+
+# Optional vision providers
+openai>=1.0.0
+anthropic>=0.18.0
+google-generativeai>=0.3.0

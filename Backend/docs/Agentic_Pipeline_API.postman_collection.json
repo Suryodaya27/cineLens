@@ -1,0 +1,295 @@
+{
+	"info": {
+		"name": "Agentic Pipeline API",
+		"description": "API for AI-powered image analysis with actor identification and object detection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check API health status and configuration"
+			},
+			"response": []
+		},
+		{
+			"name": "API Info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/",
+					"host": [
+						"{{base_url}}"
+					]
+				},
+				"description": "Get API information and available endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Fast Mode",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 0,\n  \"similarity_threshold\": 0.6,\n  \"max_cast\": 20\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with fast mode (actor identification only, no vision analysis)"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Vision Enabled (Llama)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 1,\n  \"similarity_threshold\": 0.6,\n  \"max_cast\": 20,\n  \"vision_model\": \"llama3.2-vision:11b\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with vision analysis enabled using Llama 3.2 Vision model (detailed scene, clothing, product analysis)"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Vision Enabled (Qwen)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 1,\n  \"similarity_threshold\": 0.6,\n  \"max_cast\": 20,\n  \"vision_model\": \"qwen3-vl:8b\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with vision analysis enabled using Qwen 3 VL model (faster alternative to Llama)"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Strict Matching",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 0,\n  \"similarity_threshold\": 0.75,\n  \"max_cast\": 20\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with strict face matching (higher threshold = fewer false positives)"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Lenient Matching",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 0,\n  \"similarity_threshold\": 0.5,\n  \"max_cast\": 20\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with lenient face matching (lower threshold = more matches but may have false positives)"
+			},
+			"response": []
+		},
+		{
+			"name": "Analyze Image - Limited Cast",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"image_url\": \"https://i.ibb.co/9ZQZ8Zq/srk-test.jpg\",\n  \"movie_name\": \"Pathaan\",\n  \"enable_vision\": 0,\n  \"similarity_threshold\": 0.6,\n  \"max_cast\": 10\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/analyze",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"analyze"
+					]
+				},
+				"description": "Analyze image with limited cast members (faster processing, main cast only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Actor Movies - Recent",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"actor_name\": \"Shah Rukh Khan\",\n  \"limit\": 10,\n  \"sort_by\": \"recent\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/more-movies",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"more-movies"
+					]
+				},
+				"description": "Get actor's recent movies from TMDB with poster images"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Actor Movies - Top Rated",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"actor_name\": \"Shah Rukh Khan\",\n  \"limit\": 10,\n  \"sort_by\": \"rating\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/more-movies",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"more-movies"
+					]
+				},
+				"description": "Get actor's top rated movies from TMDB sorted by rating"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Shopping Recommendations",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"analysis_data\": {\n    \"people\": [\n      {\n        \"name\": \"Shah Rukh Khan\",\n        \"clothing\": {\n          \"description\": \"Black leather jacket with white shirt\",\n          \"colors\": [\"black\", \"white\"],\n          \"style\": \"casual\",\n          \"accessories\": [\"sunglasses\", \"watch\"]\n        },\n        \"gender\": \"male\"\n      }\n    ],\n    \"products\": [],\n    \"electronics\": [],\n    \"furniture\": []\n  },\n  \"max_products_per_item\": 5,\n  \"max_visual_results\": 10,\n  \"amazon_region\": \"com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/shopping-recommendations",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"shopping-recommendations"
+					]
+				},
+				"description": "Get shopping recommendations based on analysis data (clothing, products, etc.)"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	]
+}

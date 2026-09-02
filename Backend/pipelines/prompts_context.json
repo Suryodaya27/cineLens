@@ -1,0 +1,72 @@
+{
+	"person": {
+		"identify": {
+			"prompt": "Analyze this person and provide a JSON response with:\n1. name: Full name if you recognize them with 100% certainty (or null if unsure)\n2. profession: Their profession/role if known (or null)\n3. gender: Gender presentation (male/female/non-binary/unknown)\n4. facial_features: Detailed description of face, hair, eyes, facial structure\n5. clothing: Object with description, colors array, style, accessories array\n6. pose: Body position and posture\n7. expression: Facial expression and mood\n8. held_items: Array of objects [{item: string, description: string}]\n9. confidence: Your confidence in identification (0-100)\n\nExample format:\n{\n  \"name\": \"John Doe\",\n  \"profession\": \"Actor\",\n  \"gender\": \"male\",\n  \"facial_features\": \"...\",\n  \"clothing\": {\"description\": \"Black jacket\", \"colors\": [\"black\"], \"style\": \"casual\", \"accessories\": [\"watch\"]},\n  \"pose\": \"Standing\",\n  \"expression\": \"Smiling\",\n  \"held_items\": [{\"item\": \"phone\", \"description\": \"smartphone\"}],\n  \"confidence\": 95\n}\n\nFormat as valid JSON only.",
+			"description": "Identifies celebrities, actors, public figures by name"
+		},
+		"describe": {
+			"prompt": "Describe this person and provide a JSON response with:\n1. name: null\n2. profession: null\n3. gender: Gender presentation (male/female/non-binary/unknown)\n4. facial_features: Detailed description of face, hair, eyes, facial structure\n5. clothing: Object with description, colors array, style, accessories array\n6. pose: Body position and posture\n7. expression: Facial expression and mood\n8. held_items: Array of objects [{item: string, description: string}]\n9. confidence: 0\n\nFormat as valid JSON only.",
+			"description": "Describes person's appearance without identification"
+		}
+	},
+	"bottle": {
+		"prompt": "Analyze this bottle and provide a JSON response with:\n1. brand: Brand name if visible (or null)\n2. product_type: Type of bottle (water, soda, wine, beer, juice, etc.)\n3. size: Estimated size/volume\n4. material: Material (plastic, glass, aluminum, etc.)\n5. color: Primary colors of bottle and label\n6. label_text: Any visible text on label\n7. condition: New, used, opened, sealed\n8. distinctive_features: Unique characteristics\n\nFormat as valid JSON only.",
+		"description": "Identifies beverage bottles and their brands"
+	},
+	"cup": {
+		"prompt": "Analyze this cup/glass and provide a JSON response with:\n1. type: Type (coffee cup, wine glass, mug, tumbler, etc.)\n2. material: Material (ceramic, glass, plastic, metal)\n3. brand: Brand if visible (Starbucks, etc.)\n4. color: Primary colors\n5. contents: What appears to be inside (if visible)\n6. size: Estimated size\n7. distinctive_features: Logos, text, patterns\n\nFormat as valid JSON only.",
+		"description": "Identifies cups, mugs, glasses"
+	},
+	"car": {
+		"prompt": "Analyze this car and provide a JSON response with:\n1. make: Car manufacturer (Toyota, BMW, etc.)\n2. model: Specific model if identifiable\n3. year_range: Approximate year range\n4. color: Primary color\n5. body_type: Sedan, SUV, truck, coupe, etc.\n6. condition: Condition and notable features\n7. license_plate: Any visible plate info (redact personal info)\n\nFormat as valid JSON only.",
+		"description": "Identifies vehicle make, model, and details"
+	},
+	"motorcycle": {
+		"prompt": "Analyze this motorcycle and provide a JSON response with:\n1. make: Manufacturer (Harley-Davidson, Honda, etc.)\n2. model: Specific model if identifiable\n3. type: Sport bike, cruiser, touring, dirt bike, etc.\n4. color: Primary colors\n5. distinctive_features: Notable features or modifications\n\nFormat as valid JSON only.",
+		"description": "Identifies motorcycles"
+	},
+	"bicycle": {
+		"prompt": "Analyze this bicycle and provide a JSON response with:\n1. type: Road bike, mountain bike, BMX, cruiser, etc.\n2. brand: Brand if visible\n3. color: Primary colors\n4. features: Notable features (gears, suspension, etc.)\n\nFormat as valid JSON only.",
+		"description": "Identifies bicycles"
+	},
+	"dog": {
+		"prompt": "Analyze this dog and provide a JSON response with:\n1. breed: Breed or mix (best guess)\n2. size: Small, medium, large\n3. color: Coat colors and patterns\n4. age_estimate: Puppy, young, adult, senior\n5. activity: What the dog is doing\n6. distinctive_features: Notable markings or features\n\nFormat as valid JSON only.",
+		"description": "Identifies dog breeds and characteristics"
+	},
+	"cat": {
+		"prompt": "Analyze this cat and provide a JSON response with:\n1. breed: Breed or domestic (best guess)\n2. color: Coat colors and patterns\n3. age_estimate: Kitten, young, adult, senior\n4. activity: What the cat is doing\n5. distinctive_features: Notable markings or features\n\nFormat as valid JSON only.",
+		"description": "Identifies cat breeds and characteristics"
+	},
+	"bird": {
+		"prompt": "Analyze this bird and provide a JSON response with:\n1. species: Species or type (best guess)\n2. colors: Plumage colors\n3. size: Approximate size\n4. activity: What the bird is doing\n5. distinctive_features: Notable features\n\nFormat as valid JSON only.",
+		"description": "Identifies bird species"
+	},
+	"laptop": {
+		"prompt": "Analyze this laptop and provide a JSON response with:\n1. brand: Brand (Apple, Dell, HP, etc.)\n2. model: Model if identifiable\n3. screen_size: Approximate screen size\n4. color: Primary color\n5. condition: Condition and notable features\n\nFormat as valid JSON only.",
+		"description": "Identifies laptop computers"
+	},
+	"cell phone": {
+		"prompt": "Analyze this phone and provide a JSON response with:\n1. brand: Brand (Apple, Samsung, etc.)\n2. model: Model if identifiable (iPhone 15, Galaxy S24, etc.)\n3. color: Primary color\n4. condition: Condition and notable features\n\nFormat as valid JSON only.",
+		"description": "Identifies mobile phones"
+	},
+	"book": {
+		"prompt": "Analyze this book and provide a JSON response with:\n1. title: Book title if visible\n2. author: Author if visible\n3. cover_type: Hardcover, paperback, etc.\n4. condition: Condition\n5. genre: Genre if determinable from cover\n\nFormat as valid JSON only.",
+		"description": "Identifies books"
+	},
+	"clock": {
+		"prompt": "Analyze this clock and provide a JSON response with:\n1. type: Wall clock, alarm clock, watch, etc.\n2. style: Modern, vintage, digital, analog\n3. time_shown: Time displayed if visible\n4. brand: Brand if visible\n\nFormat as valid JSON only.",
+		"description": "Identifies clocks and watches"
+	},
+	"chair": {
+		"prompt": "Analyze this chair and provide a JSON response with:\n1. type: Office chair, dining chair, armchair, etc.\n2. material: Wood, metal, plastic, upholstered\n3. style: Modern, vintage, minimalist, etc.\n4. color: Primary colors\n5. condition: Condition\n\nFormat as valid JSON only.",
+		"description": "Identifies chairs and seating"
+	},
+	"default": {
+		"prompt": "Analyze this {object_type} and provide a JSON response with:\n1. type: Specific type or category\n2. brand: Brand if visible\n3. color: Primary colors\n4. material: Material if determinable\n5. condition: Condition and state\n6. distinctive_features: Notable characteristics\n7. context: How it's being used or positioned\n\nFormat as valid JSON only.",
+		"description": "Generic object analysis"
+	},
+	"scene_analysis": {
+		"prompt": "Analyze this complete scene and provide a JSON response with:\n1. setting: Overall setting/location (indoor/outdoor, type of place)\n2. lighting: Lighting conditions and quality\n3. time_of_day: Apparent time of day if determinable\n4. mood: Overall mood or atmosphere\n5. background_elements: Notable background elements\n6. composition: How the scene is composed\n7. context: What appears to be happening\n\nFormat as valid JSON only.",
+		"description": "Analyzes the overall scene and context"
+	}
+}

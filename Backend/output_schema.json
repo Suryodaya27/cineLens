@@ -1,0 +1,535 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Agentic Pipeline Output Schema",
+	"description": "Fixed schema for image analysis output - always has same structure",
+	"type": "object",
+	"required": [
+		"source_image",
+		"scene_analysis",
+		"detections_summary",
+		"people",
+		"products",
+		"animals",
+		"vehicles",
+		"electronics",
+		"furniture",
+		"other_objects"
+	],
+	"properties": {
+		"source_image": {
+			"type": "string",
+			"description": "Original image filename"
+		},
+		"scene_analysis": {
+			"type": "object",
+			"required": [
+				"setting",
+				"lighting",
+				"time_of_day",
+				"mood",
+				"background_elements",
+				"composition",
+				"context"
+			],
+			"properties": {
+				"setting": {
+					"type": "string"
+				},
+				"lighting": {
+					"type": "string"
+				},
+				"time_of_day": {
+					"type": "string"
+				},
+				"mood": {
+					"type": "string"
+				},
+				"background_elements": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"composition": {
+					"type": "string"
+				},
+				"context": {
+					"type": "string"
+				}
+			}
+		},
+		"detections_summary": {
+			"type": "object",
+			"description": "Count of objects detected in each category",
+			"properties": {
+				"people": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"products": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"animals": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"vehicles": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"electronics": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"furniture": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"other_objects": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		"people": {
+			"type": "array",
+			"description": "Always present, empty array if no people detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"name",
+					"gender",
+					"facial_features",
+					"clothing",
+					"pose",
+					"expression",
+					"held_items",
+					"confidence",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"name": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Person's name if identified, null otherwise"
+					},
+					"profession": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Profession if known"
+					},
+					"gender": {
+						"type": "string",
+						"enum": [
+							"male",
+							"female",
+							"non-binary",
+							"unknown"
+						],
+						"description": "Gender presentation"
+					},
+					"facial_features": {
+						"type": "string",
+						"description": "Detailed facial description"
+					},
+					"clothing": {
+						"type": "object",
+						"required": [
+							"description",
+							"colors",
+							"style",
+							"accessories"
+						],
+						"properties": {
+							"description": {
+								"type": "string"
+							},
+							"colors": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"style": {
+								"type": "string"
+							},
+							"accessories": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"pose": {
+						"type": "string"
+					},
+					"expression": {
+						"type": "string"
+					},
+					"held_items": {
+						"type": "array",
+						"description": "Objects person is holding",
+						"items": {
+							"type": "object",
+							"properties": {
+								"item": {
+									"type": "string"
+								},
+								"description": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"confidence": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 100,
+						"description": "Identification confidence (0-100)"
+					},
+					"object_class": {
+						"type": "string",
+						"const": "person"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number",
+						"minimum": 0,
+						"maximum": 1
+					}
+				}
+			}
+		},
+		"products": {
+			"type": "array",
+			"description": "Always present, empty array if no products detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"brand",
+					"product_type",
+					"size",
+					"material",
+					"color",
+					"label_text",
+					"condition",
+					"distinctive_features",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"brand": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"product_type": {
+						"type": "string"
+					},
+					"size": {
+						"type": "string"
+					},
+					"material": {
+						"type": "string"
+					},
+					"color": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"label_text": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"condition": {
+						"type": "string"
+					},
+					"distinctive_features": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number",
+						"minimum": 0,
+						"maximum": 1
+					}
+				}
+			}
+		},
+		"animals": {
+			"type": "array",
+			"description": "Always present, empty array if no animals detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"breed",
+					"size",
+					"color",
+					"age_estimate",
+					"activity",
+					"distinctive_features",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"breed": {
+						"type": "string"
+					},
+					"size": {
+						"type": "string"
+					},
+					"color": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"age_estimate": {
+						"type": "string"
+					},
+					"activity": {
+						"type": "string"
+					},
+					"distinctive_features": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number"
+					}
+				}
+			}
+		},
+		"vehicles": {
+			"type": "array",
+			"description": "Always present, empty array if no vehicles detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"make",
+					"model",
+					"year_range",
+					"color",
+					"body_type",
+					"condition",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"make": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"model": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"year_range": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"body_type": {
+						"type": "string"
+					},
+					"condition": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number"
+					}
+				}
+			}
+		},
+		"electronics": {
+			"type": "array",
+			"description": "Always present, empty array if no electronics detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"brand",
+					"model",
+					"type",
+					"color",
+					"condition",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"brand": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"model": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"type": {
+						"type": "string"
+					},
+					"color": {
+						"type": "string"
+					},
+					"condition": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number"
+					}
+				}
+			}
+		},
+		"furniture": {
+			"type": "array",
+			"description": "Always present, empty array if no furniture detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"type",
+					"material",
+					"style",
+					"color",
+					"condition",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"type": {
+						"type": "string"
+					},
+					"material": {
+						"type": "string"
+					},
+					"style": {
+						"type": "string"
+					},
+					"color": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"condition": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number"
+					}
+				}
+			}
+		},
+		"other_objects": {
+			"type": "array",
+			"description": "Always present, empty array if no other objects detected",
+			"items": {
+				"type": "object",
+				"required": [
+					"type",
+					"brand",
+					"color",
+					"material",
+					"condition",
+					"distinctive_features",
+					"context",
+					"object_class",
+					"crop_image",
+					"detection_confidence"
+				],
+				"properties": {
+					"type": {
+						"type": "string"
+					},
+					"brand": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"color": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"material": {
+						"type": "string"
+					},
+					"condition": {
+						"type": "string"
+					},
+					"distinctive_features": {
+						"type": "string"
+					},
+					"context": {
+						"type": "string"
+					},
+					"object_class": {
+						"type": "string"
+					},
+					"crop_image": {
+						"type": "string"
+					},
+					"detection_confidence": {
+						"type": "number"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.pt
+output/
+final-output/
+test-results/
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.webp
+!example.jpg
+.DS_Store
+.env
+*.pyc
+__pycache__/
+
+# API specific
+temp_api_uploads/
+api_test_result.json
+analysis_result.json
+*.log

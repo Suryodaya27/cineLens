@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+*.so
+*.egg-info/
+
+# ML models and weights
+*.pt
+*.onnx
+*.bin
+
+# Images (generated/cached)
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.webp
+!Frontend/public/**
+
+# Backend data dirs
+Backend/cache/
+Backend/output/
+Backend/final-output/
+Backend/input/
+Backend/temp_api_uploads/
+Backend/models/
+
+# Frontend
+Frontend/.next/
+Frontend/node_modules/
+Frontend/coverage/
+
+# Test artifacts
+test-results/
+*.log
+api_test_result.json
+analysis_result.json
+
+# Misc
+*.pem
+.vercel
+*.tsbuildinfo
+next-env.d.ts

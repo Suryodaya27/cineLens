@@ -1,0 +1,267 @@
+{
+  "success": true,
+  "message": "Found 21 products across 7 searches",
+  "data": {
+    "shopping_results": [
+      {
+        "category": "clothing",
+        "type": "outfit",
+        "search_query": "female Sleeveless dark gray top paired dark gray black casual",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "Arach&Cloz Women's Wool Blend Sweaters Non See Through All-Season Business Casual Tank 2025",
+            "price": null,
+            "rating": "4.6 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo1NDYwNjQ0NzA1MjkyMjAzOjE3NjUzODA0OTA6c3BfYXRmOjMwMTA0OTM2MTg5NjAwMjo6MDo6&url=%2FArach-Cloz-Sleeveless-Sweater-Business%2Fdp%2FB0DPMLCHKW%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9._Y9VWUGVq2M7iYm8ZXeNX0rdSpqRBWVYQrP_S6PoRoOBOr7n3SgYlc8CPYMUNPntfVlDDX74I8H9p74_aVzNqyc8v0vY5P9XJqbyGvGt8u2E381EyAT6rkMghWRu7mE0kACX8Ph0w65Og6z_feiOG0KCwzkydqUi9FK4RXIZwyscpshFMMfCTT2rRQ-Y1UU14keLBnZ35K7JTEQdFyCyi2OvWyKKS01jE-RGd961iVS04pNNasvY-Pcuk27HLxAN5h_JcRYvUgUAzLQ45tmPCPKn8ZccWLsGuYyWw-5jG6Y.oKnC02vV1gZtEkpwVWgTNkAjsSOd5s11BHZ9E-crXAI%26dib_tag%3Dse%26keywords%3Dfemale%2BSleeveless%2Bdark%2Bgray%2Btop%2Bpaired%2Bdark%2Bgray%2Bblack%2Bcasual%26nsdOptOutParam%3Dtrue%26qid%3D1765380490%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/71thEqPYFyL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Arach&Cloz Women's Wool Blend Sweaters Non See Through Double V-Neck All-Season Tank 2025",
+            "price": null,
+            "rating": "4.6 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo1NDYwNjQ0NzA1MjkyMjAzOjE3NjUzODA0OTA6c3BfYXRmOjMwMTA0OTM0NjU5MDQwMjo6MDo6&url=%2FArach-Cloz-Sleeveless-Cashmere-Business%2Fdp%2FB0DPM98MBT%2Fref%3Dsr_1_2_sspa%3Fdib%3DeyJ2IjoiMSJ9._Y9VWUGVq2M7iYm8ZXeNX0rdSpqRBWVYQrP_S6PoRoOBOr7n3SgYlc8CPYMUNPntfVlDDX74I8H9p74_aVzNqyc8v0vY5P9XJqbyGvGt8u2E381EyAT6rkMghWRu7mE0kACX8Ph0w65Og6z_feiOG0KCwzkydqUi9FK4RXIZwyscpshFMMfCTT2rRQ-Y1UU14keLBnZ35K7JTEQdFyCyi2OvWyKKS01jE-RGd961iVS04pNNasvY-Pcuk27HLxAN5h_JcRYvUgUAzLQ45tmPCPKn8ZccWLsGuYyWw-5jG6Y.oKnC02vV1gZtEkpwVWgTNkAjsSOd5s11BHZ9E-crXAI%26dib_tag%3Dse%26keywords%3Dfemale%2BSleeveless%2Bdark%2Bgray%2Btop%2Bpaired%2Bdark%2Bgray%2Bblack%2Bcasual%26nsdOptOutParam%3Dtrue%26qid%3D1765380490%26sr%3D8-2-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/71Xp--pHKRL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Zeagoo Women Long Sleeve Tops Dressy Casual V Neck Tshirts Basics Tee 2025 Fall Trendy Clothes S-2XL",
+            "price": null,
+            "rating": "4.2 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo1NDYwNjQ0NzA1MjkyMjAzOjE3NjUzODA0OTA6c3BfYXRmOjMwMDkzNDA3NzQyNzQwMjo6MDo6&url=%2FZeagoo-Leopard-Blouses-Tshirts-Outfits%2Fdp%2FB0FJ2T68HL%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9._Y9VWUGVq2M7iYm8ZXeNX0rdSpqRBWVYQrP_S6PoRoOBOr7n3SgYlc8CPYMUNPntfVlDDX74I8H9p74_aVzNqyc8v0vY5P9XJqbyGvGt8u2E381EyAT6rkMghWRu7mE0kACX8Ph0w65Og6z_feiOG0KCwzkydqUi9FK4RXIZwyscpshFMMfCTT2rRQ-Y1UU14keLBnZ35K7JTEQdFyCyi2OvWyKKS01jE-RGd961iVS04pNNasvY-Pcuk27HLxAN5h_JcRYvUgUAzLQ45tmPCPKn8ZccWLsGuYyWw-5jG6Y.oKnC02vV1gZtEkpwVWgTNkAjsSOd5s11BHZ9E-crXAI%26dib_tag%3Dse%26keywords%3Dfemale%2BSleeveless%2Bdark%2Bgray%2Btop%2Bpaired%2Bdark%2Bgray%2Bblack%2Bcasual%26nsdOptOutParam%3Dtrue%26qid%3D1765380490%26sr%3D8-3-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/8132Mos3jLL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "accessory",
+        "type": "large hoop earrings",
+        "search_query": "female large hoop earrings",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "Huge Gold Hoop Earrings for Women - Plated Stainless Steel, 70-100mm Large Hooped Earrings",
+            "price": null,
+            "rating": "4.2 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDgyNDY3NTAwMzQ5NjQxOjE3NjUzODA0OTM6c3BfYXRmOjMwMDAxMzE4MTA5NDcwMjo6MDo6&url=%2FLXBSIYI-Huge-Gold-Earrings-Women%2Fdp%2FB07P864D76%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9.v3iEPFiuXnibfXkiD5tZPX4E0vCc3s7H0P7IMvjhbNuRB8RXiF64G6xewSWzFRk32GcW1E9eZuy7T_mmo01THamuRyiGZZkShnfDAVduDBR_DISxkteTshW22T4mhqvrguASRdNJwJVjZBPKeq5t6LfGVX3JMgM_XWTY6gow5mO8GD8GW8kk6G_2ajId3zIr7lclIDPIH59SQBiJo-V76N3MNhQg0doCGgg-k4b-qfzoNATdtmQB5KIeb0KYT4zxgGOwui33uaIqHu6qP2iBDU8V6ZoiP0KLvdITQONy5hU.XQfTiPBFA8PGEzIpFO8QSIceWVVO_f0tfdyUc1eqINE%26dib_tag%3Dse%26keywords%3Dfemale%2Blarge%2Bhoop%2Bearrings%26qid%3D1765380493%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/61UBslWRXtL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "ORAZIO 4 Pairs Stainless Steel Hoop Earrings Set Cute Huggie Earrings for Women,10MM-20MM",
+            "price": null,
+            "rating": "4.4 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDgyNDY3NTAwMzQ5NjQxOjE3NjUzODA0OTM6c3BfYXRmOjMwMDY3Mjg2ODc1MzUwMjo6MDo6&url=%2FORAZIO-Stainless-Earrings-Silver-Tone-10MM-20MM%2Fdp%2FB01HTP2X0I%2Fref%3Dsr_1_2_sspa%3Fdib%3DeyJ2IjoiMSJ9.v3iEPFiuXnibfXkiD5tZPX4E0vCc3s7H0P7IMvjhbNuRB8RXiF64G6xewSWzFRk32GcW1E9eZuy7T_mmo01THamuRyiGZZkShnfDAVduDBR_DISxkteTshW22T4mhqvrguASRdNJwJVjZBPKeq5t6LfGVX3JMgM_XWTY6gow5mO8GD8GW8kk6G_2ajId3zIr7lclIDPIH59SQBiJo-V76N3MNhQg0doCGgg-k4b-qfzoNATdtmQB5KIeb0KYT4zxgGOwui33uaIqHu6qP2iBDU8V6ZoiP0KLvdITQONy5hU.XQfTiPBFA8PGEzIpFO8QSIceWVVO_f0tfdyUc1eqINE%26dib_tag%3Dse%26keywords%3Dfemale%2Blarge%2Bhoop%2Bearrings%26qid%3D1765380493%26sr%3D8-2-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/51iJ6Id9DyL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Colorful Hoop Earrings for Women 80s Hoop Earrings Neon Hoops Earring Colorful Matte Large Round Loop Earring 80s 90s Neon Jewelry for Women Accessories",
+            "price": null,
+            "rating": "4.2 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDgyNDY3NTAwMzQ5NjQxOjE3NjUzODA0OTM6c3BfYXRmOjMwMDcwNzU0MTA4MjAwMjo6MDo6&url=%2FEarrings-Earring-Colorful-Jewelry-Accessories%2Fdp%2FB0DZ5CT3DB%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9.v3iEPFiuXnibfXkiD5tZPX4E0vCc3s7H0P7IMvjhbNuRB8RXiF64G6xewSWzFRk32GcW1E9eZuy7T_mmo01THamuRyiGZZkShnfDAVduDBR_DISxkteTshW22T4mhqvrguASRdNJwJVjZBPKeq5t6LfGVX3JMgM_XWTY6gow5mO8GD8GW8kk6G_2ajId3zIr7lclIDPIH59SQBiJo-V76N3MNhQg0doCGgg-k4b-qfzoNATdtmQB5KIeb0KYT4zxgGOwui33uaIqHu6qP2iBDU8V6ZoiP0KLvdITQONy5hU.XQfTiPBFA8PGEzIpFO8QSIceWVVO_f0tfdyUc1eqINE%26dib_tag%3Dse%26keywords%3Dfemale%2Blarge%2Bhoop%2Bearrings%26qid%3D1765380493%26sr%3D8-3-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/61nWE1CCeDL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "clothing",
+        "type": "outfit",
+        "search_query": "male White unbuttoned short-sleeved shirt, black white black Casual yet rugged, streetwear-inspired",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "GORGLITTER",
+            "price": null,
+            "rating": "4.0 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/GORGLITTER-Striped-Letter-Graphic-Button/dp/B0DJYZYS2C/ref=sr_1_1?dib=eyJ2IjoiMSJ9.Awo0CJPN58UCiTySNK3rFrWtAYbbIGFZcVC1wNBQfDwgB3xMhadjxBpf8Y1B9U3noZvwQsPw-INyi5b0g7BdvJMcaVdyvnneWTvUsNmKxTXWJcLVuZVp3URjJHk7c7U2LEtM6bPflbhSaYVJAlpSw526CHTPT5sS-0RE2HWl1PjjYJms1gJ1GKiR0ZU3Tu7L1e_vRI8ISNNy-LSLg9CUhHv9FIe3VrV0M3ioRbXESJOW-RhMPUEa0769g3qxJdWLRhR7sIM2nt2OEoSjoRTB_kBbtix4xgkzsCan68QG93I.xNAZIkO0rNEgL6Wb9cxcbeD9hxc77qYulTDD-kOy9eU&dib_tag=se&keywords=male+White+unbuttoned+short-sleeved+shirt%2C+black+white+black+Casual+yet+rugged%2C+streetwear-inspired&nsdOptOutParam=true&qid=1765380496&sr=8-1",
+            "image": "https://m.media-amazon.com/images/I/71JHUTuCumL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "COOFANDY",
+            "price": null,
+            "rating": "4.5 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/COOFANDY-Cotton-Sleeve-Regular-Black-White/dp/B0DZHB952L/ref=sr_1_2?dib=eyJ2IjoiMSJ9.Awo0CJPN58UCiTySNK3rFrWtAYbbIGFZcVC1wNBQfDwgB3xMhadjxBpf8Y1B9U3noZvwQsPw-INyi5b0g7BdvJMcaVdyvnneWTvUsNmKxTXWJcLVuZVp3URjJHk7c7U2LEtM6bPflbhSaYVJAlpSw526CHTPT5sS-0RE2HWl1PjjYJms1gJ1GKiR0ZU3Tu7L1e_vRI8ISNNy-LSLg9CUhHv9FIe3VrV0M3ioRbXESJOW-RhMPUEa0769g3qxJdWLRhR7sIM2nt2OEoSjoRTB_kBbtix4xgkzsCan68QG93I.xNAZIkO0rNEgL6Wb9cxcbeD9hxc77qYulTDD-kOy9eU&dib_tag=se&keywords=male+White+unbuttoned+short-sleeved+shirt%2C+black+white+black+Casual+yet+rugged%2C+streetwear-inspired&nsdOptOutParam=true&qid=1765380496&sr=8-2",
+            "image": "https://m.media-amazon.com/images/I/718ArCFJTEL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Lzzidou",
+            "price": null,
+            "rating": "4.2 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/Vintage-Bowling-Shirts-Casual-Contrast/dp/B0BZ86PBS2/ref=sr_1_3?dib=eyJ2IjoiMSJ9.Awo0CJPN58UCiTySNK3rFrWtAYbbIGFZcVC1wNBQfDwgB3xMhadjxBpf8Y1B9U3noZvwQsPw-INyi5b0g7BdvJMcaVdyvnneWTvUsNmKxTXWJcLVuZVp3URjJHk7c7U2LEtM6bPflbhSaYVJAlpSw526CHTPT5sS-0RE2HWl1PjjYJms1gJ1GKiR0ZU3Tu7L1e_vRI8ISNNy-LSLg9CUhHv9FIe3VrV0M3ioRbXESJOW-RhMPUEa0769g3qxJdWLRhR7sIM2nt2OEoSjoRTB_kBbtix4xgkzsCan68QG93I.xNAZIkO0rNEgL6Wb9cxcbeD9hxc77qYulTDD-kOy9eU&dib_tag=se&keywords=male+White+unbuttoned+short-sleeved+shirt%2C+black+white+black+Casual+yet+rugged%2C+streetwear-inspired&nsdOptOutParam=true&qid=1765380496&sr=8-3",
+            "image": "https://m.media-amazon.com/images/I/51GG3jI2wrL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "accessory",
+        "type": "sunglasses",
+        "search_query": "male sunglasses",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "KALIYADI Classic Aviator Sunglasses for Men Women Driving Sun glasses Polarized Lens UV Blocking",
+            "price": null,
+            "rating": "4.4 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MToyNjg0NjYzMDQ1MjUxMjcwOjE3NjUzODA0OTk6c3BfYXRmOjIwMDAxODk5NjQ3MjYxMTo6MDo6&url=%2FKALIYADI-Classic-Sunglasses-Polarized-Blocking%2Fdp%2FB07XCQ3Z8H%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9.lKop6csvxcwztFDrlho03s7BcOJMqA9kW-otRpiLHX3sr-bPMsXPBaz2Y6P7azRUsNbYcFVnwm0Z3PCeUFMvlVGpP7ztj3I98QUSi7d9fvT2yCK6TLquwh5c1DqN_Mj0ggwt8SB0FqoGdD4pEDurmUactoe3P7U5jrz6elCINGGrLfW1g5elGKerwk0k4zJ6laVUAuP9Bbnue5netb_UflUe9xvx3tVgo8_ack4Ule-z_aOUohBVPU5aYcZbhPkrVsj_gbhW8cq6p2RuqHLRZonhbklR4FRNw88sSj4Enwo.8LLfGqj8EsPHle298hDkeQkf67_sTtg0D51xNRJ3kuQ%26dib_tag%3Dse%26keywords%3Dmale%2Bsunglasses%26qid%3D1765380499%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/71LouOP0WBL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "KALIYADI Polarized Sunglasses for Men, Lightweight Sun Glasses with UV Protection for Driving Fishing Golf",
+            "price": null,
+            "rating": "4.5 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MToyNjg0NjYzMDQ1MjUxMjcwOjE3NjUzODA0OTk6c3BfYXRmOjIwMDE1ODk3MjIxMTk5ODo6MDo6&url=%2FKALIYADI-Polarized-Sunglasses-Lightweight-Protection%2Fdp%2FB0BWTW5DX2%2Fref%3Dsr_1_2_sspa%3Fdib%3DeyJ2IjoiMSJ9.lKop6csvxcwztFDrlho03s7BcOJMqA9kW-otRpiLHX3sr-bPMsXPBaz2Y6P7azRUsNbYcFVnwm0Z3PCeUFMvlVGpP7ztj3I98QUSi7d9fvT2yCK6TLquwh5c1DqN_Mj0ggwt8SB0FqoGdD4pEDurmUactoe3P7U5jrz6elCINGGrLfW1g5elGKerwk0k4zJ6laVUAuP9Bbnue5netb_UflUe9xvx3tVgo8_ack4Ule-z_aOUohBVPU5aYcZbhPkrVsj_gbhW8cq6p2RuqHLRZonhbklR4FRNw88sSj4Enwo.8LLfGqj8EsPHle298hDkeQkf67_sTtg0D51xNRJ3kuQ%26dib_tag%3Dse%26keywords%3Dmale%2Bsunglasses%26qid%3D1765380499%26sr%3D8-2-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/71uj3g0flUL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Trendy Square Polarized Men's Sunglasses UV 400 Protection 882269S",
+            "price": null,
+            "rating": null,
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MToyNjg0NjYzMDQ1MjUxMjcwOjE3NjUzODA0OTk6c3BfYXRmOjMwMTA3MjY2ODA4OTAwMjo6MDo6&url=%2FAydicon-Polarized-Sunglasses-Protection-882269S%2Fdp%2FB0FW124ML7%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9.lKop6csvxcwztFDrlho03s7BcOJMqA9kW-otRpiLHX3sr-bPMsXPBaz2Y6P7azRUsNbYcFVnwm0Z3PCeUFMvlVGpP7ztj3I98QUSi7d9fvT2yCK6TLquwh5c1DqN_Mj0ggwt8SB0FqoGdD4pEDurmUactoe3P7U5jrz6elCINGGrLfW1g5elGKerwk0k4zJ6laVUAuP9Bbnue5netb_UflUe9xvx3tVgo8_ack4Ule-z_aOUohBVPU5aYcZbhPkrVsj_gbhW8cq6p2RuqHLRZonhbklR4FRNw88sSj4Enwo.8LLfGqj8EsPHle298hDkeQkf67_sTtg0D51xNRJ3kuQ%26dib_tag%3Dse%26keywords%3Dmale%2Bsunglasses%26qid%3D1765380499%26sr%3D8-3-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/51k-sAqEukL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "accessory",
+        "type": "gold necklace",
+        "search_query": "male gold necklace",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "M MOOHAM Cross Necklace for Men - Stainless Steel Silver Gold Black Plain Cross Pendant Necklace Simple Jewelry Gifts, 16-24 Inches Chain",
+            "price": null,
+            "rating": "4.1 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo2MjM2ODQwMTgzOTMzOTY5OjE3NjUzODA1MDQ6c3BfYXRmOjMwMTA1NTg1MDgzMzIwMjo6MDo6&url=%2FMOOHAM-Gold-Cross-Pendant-Chain%2Fdp%2FB07VKRYGY7%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9.0NoVWdSivTymV24qpkFR6Bog2dEVEYZVXz5-K9_KaCIx9AWPqan_gxHGX3JanS-LAFI_yd3YZ9fhhdZ4oQ5GSgM7lr8MKAg_VvI-iVCifC4Go_a2ir15Ztrrmx_Fae86pW1b5TM1zCagp8uRigHHuCVnLYqBBzfUCjbLCe4AfhTFSdVOlQ3hFf-zKkmIlBwi-OTSmTIm12bhgyZYVczGNjo_zHXkJulZRKQiZva-jF7j04008SewpxLEFCMvmabjKTKg-q2BXh6bXOR3ne3PuOWX2ZLd3M6M5Wu7Uh__rEk.Eoou7y-fhXHWXV2k5KZTmjUNvR1jf3E70h_K9JbEjRc%26dib_tag%3Dse%26keywords%3Dmale%2Bgold%2Bnecklace%26qid%3D1765380504%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/51Ia2NDDS4L._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "P. BLAKE Stocking Stuffers - Layered Initial A-Z Pendant Necklaces Gifts for Men Boys, Stainless Steel Letter Cuban Link Herringbone Chain Fashion Christmas Jewelry Gifts for Teens Teenage Boys Kids",
+            "price": null,
+            "rating": "4.5 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo2MjM2ODQwMTgzOTMzOTY5OjE3NjUzODA1MDQ6c3BfYXRmOjMwMTA4NDgxOTg3NjEwMjo6MDo6&url=%2FP-BLAKE-Necklace-Stainless-Herringbone-Valentines%2Fdp%2FB0D1YLKGB8%2Fref%3Dsr_1_2_sspa%3Fdib%3DeyJ2IjoiMSJ9.0NoVWdSivTymV24qpkFR6Bog2dEVEYZVXz5-K9_KaCIx9AWPqan_gxHGX3JanS-LAFI_yd3YZ9fhhdZ4oQ5GSgM7lr8MKAg_VvI-iVCifC4Go_a2ir15Ztrrmx_Fae86pW1b5TM1zCagp8uRigHHuCVnLYqBBzfUCjbLCe4AfhTFSdVOlQ3hFf-zKkmIlBwi-OTSmTIm12bhgyZYVczGNjo_zHXkJulZRKQiZva-jF7j04008SewpxLEFCMvmabjKTKg-q2BXh6bXOR3ne3PuOWX2ZLd3M6M5Wu7Uh__rEk.Eoou7y-fhXHWXV2k5KZTmjUNvR1jf3E70h_K9JbEjRc%26dib_tag%3Dse%26keywords%3Dmale%2Bgold%2Bnecklace%26qid%3D1765380504%26sr%3D8-2-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/61Uuaze8DCL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "3 Pcs Chain Necklace for Men, 4mm Stainless Steel Gold Black and Silver Wheat Chains for Mens Jewelry Gift, 16\"/20\"/24\"/28\"/32 Inches",
+            "price": null,
+            "rating": "4.5 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo2MjM2ODQwMTgzOTMzOTY5OjE3NjUzODA1MDQ6c3BfYXRmOjIwMDA0ODI5OTMyOTk5ODo6MDo6&url=%2FGarysiom-Necklace-Stainless-Silver-Jewelry%2Fdp%2FB09VVQJPG1%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9.0NoVWdSivTymV24qpkFR6Bog2dEVEYZVXz5-K9_KaCIx9AWPqan_gxHGX3JanS-LAFI_yd3YZ9fhhdZ4oQ5GSgM7lr8MKAg_VvI-iVCifC4Go_a2ir15Ztrrmx_Fae86pW1b5TM1zCagp8uRigHHuCVnLYqBBzfUCjbLCe4AfhTFSdVOlQ3hFf-zKkmIlBwi-OTSmTIm12bhgyZYVczGNjo_zHXkJulZRKQiZva-jF7j04008SewpxLEFCMvmabjKTKg-q2BXh6bXOR3ne3PuOWX2ZLd3M6M5Wu7Uh__rEk.Eoou7y-fhXHWXV2k5KZTmjUNvR1jf3E70h_K9JbEjRc%26dib_tag%3Dse%26keywords%3Dmale%2Bgold%2Bnecklace%26qid%3D1765380504%26sr%3D8-3-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/81g9sIq9hML._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "accessory",
+        "type": "wristband",
+        "search_query": "male wristband",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "Leather Bracelets for Mens Gifts - Premium Genuine Leather Natural Lava Rock Adjustable Stainless Steel Magnetic Clasp Mens Initial Bracelet, Unique Gifts for Men Husband Dad Son",
+            "price": null,
+            "rating": "5.0 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDkxNDEwOTA5MDYxMjk1OjE3NjUzODA1MDg6c3BfYXRmOjMwMDE2NTM3MjM0MjIwMjo6MDo6&url=%2FBracelets-Leather-Bracelet-Braided-Initial%2Fdp%2FB0BZKTQGH1%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9.zaVFDJFX0__0KuoB8-XN-TyoKZyu6LjUwze4IG8zZHCBe2VxrttTO3gJYicZ4zRYiWhGqTtCUfiougwhAaiUtaQYx97-g9_oJS229zc6dPaFPiZxJLnGlXWVbTxefq0f4oGcTiq26yupnmPMnvxS1CjHziT26l_424eLvTsm5QaKnfDgUsDaI2htVa2qOVk-SJ0LFtEFKsE_9FuN-f64hlh-FGBOGS4B6eHed6NhdEyxQarsMg8981yUyjCL-1iw_I0gcRoavCPxw8zNqKDACM3RLf-3dxHEhd9lBM9KEo0.eDkiIE-Su3_MNWbYlOwhH_cY-eG7UVWB9UtgUuv3cNU%26dib_tag%3Dse%26keywords%3Dmale%2Bwristband%26qid%3D1765380508%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/718F4JLAajL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Infinity Knot Leather Bracelet for Men, Stainless Steel Black/Brown Genuine Leather Braided Bracelet Wristband Cuff Jewelry Gift for Men Father Husband",
+            "price": null,
+            "rating": "4.4 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDkxNDEwOTA5MDYxMjk1OjE3NjUzODA1MDg6c3BfYXRmOjMwMTA1MzIzNDE1ODEwMjo6MDo6&url=%2FFYNSBLE-Infinity-Bracelet-Stainless-Wristband%2Fdp%2FB0FFMSDW9N%2Fref%3Dsr_1_2_sspa%3Fdib%3DeyJ2IjoiMSJ9.zaVFDJFX0__0KuoB8-XN-TyoKZyu6LjUwze4IG8zZHCBe2VxrttTO3gJYicZ4zRYiWhGqTtCUfiougwhAaiUtaQYx97-g9_oJS229zc6dPaFPiZxJLnGlXWVbTxefq0f4oGcTiq26yupnmPMnvxS1CjHziT26l_424eLvTsm5QaKnfDgUsDaI2htVa2qOVk-SJ0LFtEFKsE_9FuN-f64hlh-FGBOGS4B6eHed6NhdEyxQarsMg8981yUyjCL-1iw_I0gcRoavCPxw8zNqKDACM3RLf-3dxHEhd9lBM9KEo0.eDkiIE-Su3_MNWbYlOwhH_cY-eG7UVWB9UtgUuv3cNU%26dib_tag%3Dse%26keywords%3Dmale%2Bwristband%26qid%3D1765380508%26sr%3D8-2-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/61ywQV0d69L._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "ChainsHouse Stainless Steel Cuban Link Bracelet, 8mm/12mm/17mm Width, 7.5\"/8.3\"/9\", 18K Gold Plated Chain Wrist Bracelets for Men Women, Send Gift Box",
+            "price": null,
+            "rating": "4.4 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0NDkxNDEwOTA5MDYxMjk1OjE3NjUzODA1MDg6c3BfYXRmOjMwMDc4ODY4MDYzNjAwMjo6MDo6&url=%2FStainless-Steel-Franco-Bracelet-Rapper%2Fdp%2FB087Q4SHX2%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9.zaVFDJFX0__0KuoB8-XN-TyoKZyu6LjUwze4IG8zZHCBe2VxrttTO3gJYicZ4zRYiWhGqTtCUfiougwhAaiUtaQYx97-g9_oJS229zc6dPaFPiZxJLnGlXWVbTxefq0f4oGcTiq26yupnmPMnvxS1CjHziT26l_424eLvTsm5QaKnfDgUsDaI2htVa2qOVk-SJ0LFtEFKsE_9FuN-f64hlh-FGBOGS4B6eHed6NhdEyxQarsMg8981yUyjCL-1iw_I0gcRoavCPxw8zNqKDACM3RLf-3dxHEhd9lBM9KEo0.eDkiIE-Su3_MNWbYlOwhH_cY-eG7UVWB9UtgUuv3cNU%26dib_tag%3Dse%26keywords%3Dmale%2Bwristband%26qid%3D1765380508%26sr%3D8-3-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/61ByhdwljVL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      },
+      {
+        "category": "held_item",
+        "type": "small object",
+        "search_query": "male small object",
+        "search_method": "text",
+        "products": [
+          {
+            "title": "Commemorative Cremation Urns for Ashes Adult Male - Personalized Urn for Ashes for Women Decorative Urns - Beautiful Handcrafted Urns for Human (Small Divine Deer)",
+            "price": null,
+            "rating": "4.8 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/sspa/click?ie=UTF8&spc=MTo0ODYyMjMwMjU0MDY5MDg6MTc2NTM4MDUxMjpzcF9hdGY6MzAxMDYxMTUyMTgwNDAyOjowOjo&url=%2FDignified-Cremation-Funeral-Columbarium-Keepsake%2Fdp%2FB08YXYPDVF%2Fref%3Dsr_1_1_sspa%3Fdib%3DeyJ2IjoiMSJ9._13xf7D2dEZFZ4V6Glim7jjcyS-fnrrpb8BVwtmJwsiJtSpoDrOzqGs7gRLPWya7kJeQILtc2THSmItj73ZhPV-_dMo3qDK7NjuiQ3A0IwiK10IbJH3zBk3_931q9Grm8Ki7jbEp_WjbXHJcGTx5EMBaULTxI9Z351nIW7ldMXP06jVNX6t4gMYlHvSjU6cmNcySH4ASCt1GmjuXVF5C9_DWyk5NFDMvNJ1KYd5uxENWxQhy2mcfVxYQJIC-N86jIViFhZSSy5V7a8vncE7rnZaFWl_uEFNU9IGmdQeKzuc.JxfSEoGvmO6iLa9uhhOkgaILcqJMWGtpHmTxUclRVSo%26dib_tag%3Dse%26keywords%3Dmale%2Bsmall%2Bobject%26qid%3D1765380512%26sr%3D8-1-spons%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1",
+            "image": "https://m.media-amazon.com/images/I/81FgR87DPPL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "Chanzon 30 Pairs Jst PH 2.0 mm 22AWG 2Pin Pitch Plug Connector for UL1007 Tinned Copper Wire for Battery H67 H36 Blade Inductrix E010 E013",
+            "price": "988.",
+            "rating": "4.4 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/Chanzon-Connector-Battery-Terminal-Extension/dp/B0B2DC8ST8/ref=sr_1_2?dib=eyJ2IjoiMSJ9._13xf7D2dEZFZ4V6Glim7jjcyS-fnrrpb8BVwtmJwsiJtSpoDrOzqGs7gRLPWya7kJeQILtc2THSmItj73ZhPV-_dMo3qDK7NjuiQ3A0IwiK10IbJH3zBk3_931q9Grm8Ki7jbEp_WjbXHJcGTx5EMBaULTxI9Z351nIW7ldMXP06jVNX6t4gMYlHvSjU6cmNcySH4ASCt1GmjuXVF5C9_DWyk5NFDMvNJ1KYd5uxENWxQhy2mcfVxYQJIC-N86jIViFhZSSy5V7a8vncE7rnZaFWl_uEFNU9IGmdQeKzuc.JxfSEoGvmO6iLa9uhhOkgaILcqJMWGtpHmTxUclRVSo&dib_tag=se&keywords=male+small+object&qid=1765380512&sr=8-2",
+            "image": "https://m.media-amazon.com/images/I/71PExeUj4LL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          },
+          {
+            "title": "OBEST Worldbox 1/6 Scale Male Body Action Figure, 12inch Male Soldier Flexible Strong Neckless Big Muscle Body Collection (AT044)…",
+            "price": null,
+            "rating": "5.0 out of 5 stars",
+            "reviews": null,
+            "url": "https://www.amazon.com/OBEST-Worldbox-Scale-Action-Figure/dp/B0BXWVT7Z3/ref=sr_1_3?dib=eyJ2IjoiMSJ9._13xf7D2dEZFZ4V6Glim7jjcyS-fnrrpb8BVwtmJwsiJtSpoDrOzqGs7gRLPWya7kJeQILtc2THSmItj73ZhPV-_dMo3qDK7NjuiQ3A0IwiK10IbJH3zBk3_931q9Grm8Ki7jbEp_WjbXHJcGTx5EMBaULTxI9Z351nIW7ldMXP06jVNX6t4gMYlHvSjU6cmNcySH4ASCt1GmjuXVF5C9_DWyk5NFDMvNJ1KYd5uxENWxQhy2mcfVxYQJIC-N86jIViFhZSSy5V7a8vncE7rnZaFWl_uEFNU9IGmdQeKzuc.JxfSEoGvmO6iLa9uhhOkgaILcqJMWGtpHmTxUclRVSo&dib_tag=se&keywords=male+small+object&qid=1765380512&sr=8-3",
+            "image": "https://m.media-amazon.com/images/I/61usXYiGjkL._AC_UL320_.jpg",
+            "source": "Amazon.com"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "total_searches": 7,
+      "text_searches": 7,
+      "visual_searches": 0,
+      "total_products_found": 21,
+      "amazon_region": "com",
+      "visual_provider": "serpapi"
+    },
+    "summary": {
+      "total_searches": 7,
+      "text_searches": 7,
+      "visual_searches": 0,
+      "total_products_found": 21
+    }
+  }
+}

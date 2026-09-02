@@ -8,7 +8,7 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 - **Task:** Build an end-to-end system that takes a movie frame + movie name, identifies the specific actors from that film's cast, describes the scene in detail, and connects detected items to purchasable products — all with real-time progress feedback.
 
-- **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built SSE streaming from FastAPI through Next.js to show live pipeline progress. Integrated llm-replay proxy for full LLM observability and prompt debugging without re-running the pipeline.
+- **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built SSE streaming from FastAPI through Next.js to show live pipeline progress.
 
 - **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis with scene descriptions, clothing details, and object analysis in 2–8 minutes on local hardware. Shopping recommendations via Amazon text search + SerpAPI visual search. All with a live progress UI instead of a blank loading screen.
 
@@ -43,9 +43,6 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
             ▼                  ▼                  ▼
    PostgreSQL+pgvector     TMDB API         Ollama (local LLM)
    (face embeddings)    (cast, images)     (scene/object analysis)
-                                                  │ optional
-                                            llm-replay proxy
-                                            (observability)
 ```
 
 **SSE event flow:** The pipeline streams progress events (`imagebb` → `progress` × N → `complete` or `error`) so the UI updates step-by-step: upload → download → init → cast → detect → identify → scene → objects → upload crops.
@@ -63,7 +60,6 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 | Vision analysis | Ollama (qwen3.8, llama3.2-vision, etc.) |
 | Image hosting | ImgBB |
 | Shopping | Amazon scraping + SerpAPI visual search |
-| LLM observability | [llm-replay](https://github.com/Suryodaya27/llm-replay) (optional) |
 
 ## Project Structure
 
@@ -166,22 +162,7 @@ Environment variables in `Backend/.env`:
 | `IMGBB_API_KEY` | Yes | Image hosting |
 | `SERPAPI_KEY` | No | Visual product search |
 | `VISION_MODEL` | No | Ollama model (default: `qwen3.8:latest`) |
-| `LLM_REPLAY_HOST` | No | llm-replay proxy URL |
 | `POSTGRES_*` | No | DB config (defaults: localhost/5432/face_recognition/postgres/postgres) |
-
-## LLM Observability
-
-Route Ollama calls through [llm-replay](https://github.com/Suryodaya27/llm-replay) to inspect every prompt, response, and latency. Use "What if?" branching to test prompt changes without re-running the full pipeline.
-
-```bash
-# Terminal 1
-cd ~/Projects/llm-replay && node dist/cli.js ui --session cinelens
-
-# Uncomment in Backend/.env
-LLM_REPLAY_HOST=http://localhost:11435
-
-# Restart backend — dashboard at http://localhost:3001
-```
 
 ## Docs
 

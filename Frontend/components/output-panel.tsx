@@ -104,6 +104,17 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 	const furniture = data.furniture || []
 	const otherObjects = data.other_objects || []
 	const scene = data.scene_analysis
+
+	// Vision model sometimes returns nested objects instead of strings — flatten them
+	const toStr = (val: unknown): string => {
+		if (val == null) return ""
+		if (typeof val === "string") return val
+		if (typeof val === "number" || typeof val === "boolean") return String(val)
+		if (Array.isArray(val)) return val.map(toStr).join(", ")
+		if (typeof val === "object") return Object.values(val).map(toStr).join(", ")
+		return String(val)
+	}
+
 	const totalObjects = products.length + animals.length + vehicles.length +
 		electronics.length + furniture.length + otherObjects.length
 
@@ -152,6 +163,7 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 			})
 			if (!response.ok) throw new Error()
 			const apiResponse = await response.json()
+			console.log("Shopping API response:", JSON.stringify(apiResponse?.data?.shopping_results?.length), "categories")
 			setShoppingResults(apiResponse.data)
 		} catch {
 			setShoppingResults(null)
@@ -310,15 +322,15 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 											["Time", scene.time_of_day],
 											["Lighting", scene.lighting],
 										].map(([label, val]) => val ? (
-											<div key={label}>
-												<p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-												<p className="text-foreground mt-0.5">{val}</p>
+											<div key={String(label)}>
+												<p className="text-[10px] text-muted-foreground uppercase tracking-wider">{String(label)}</p>
+												<p className="text-foreground mt-0.5">{toStr(val)}</p>
 											</div>
 										) : null)}
 										{scene.context && (
 											<div className="col-span-2">
 												<p className="text-[10px] text-muted-foreground uppercase tracking-wider">Context</p>
-												<p className="text-foreground mt-0.5">{scene.context}</p>
+												<p className="text-foreground mt-0.5">{toStr(scene.context)}</p>
 											</div>
 										)}
 									</div>
@@ -389,11 +401,11 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 												{person.clothing?.description && person.clothing.description !== "Not analyzed" && (
 													<div>
 														<p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Clothing</p>
-														<p className="text-sm">{person.clothing.description}</p>
+														<p className="text-sm">{toStr(person.clothing.description)}</p>
 														{person.clothing.colors.length > 0 && (
 															<div className="flex flex-wrap gap-1 mt-1.5">
 																{person.clothing.colors.map((c, j) => (
-																	<span key={j} className="px-2 py-0.5 bg-secondary rounded text-xs capitalize">{c}</span>
+																	<span key={j} className="px-2 py-0.5 bg-secondary rounded text-xs capitalize">{toStr(c)}</span>
 																))}
 															</div>
 														)}
@@ -406,13 +418,13 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 														{person.pose !== "Not analyzed" && (
 															<div>
 																<p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pose</p>
-																<p className="text-sm mt-0.5">{person.pose}</p>
+																<p className="text-sm mt-0.5">{toStr(person.pose)}</p>
 															</div>
 														)}
 														{person.expression !== "Not analyzed" && (
 															<div>
 																<p className="text-[10px] text-muted-foreground uppercase tracking-wider">Expression</p>
-																<p className="text-sm mt-0.5">{person.expression}</p>
+																<p className="text-sm mt-0.5">{toStr(person.expression)}</p>
 															</div>
 														)}
 													</div>

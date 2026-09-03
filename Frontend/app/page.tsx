@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import InputPanel from "@/components/input-panel"
 import OutputPanel from "@/components/output-panel"
@@ -45,7 +45,7 @@ const STEP_MAP: Record<string, string> = {
   identify: "identify", scene: "scene", objects: "objects", upload: "upload_crops",
 }
 
-export default function Home() {
+function HomeContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [hideInputPanel, setHideInputPanel] = useState(false)
@@ -153,11 +153,10 @@ export default function Home() {
   const progress = (doneCount / steps.length) * 100
 
   return (
-    <div className="flex min-h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Input Panel */}
       {!hideInputPanel && (
-        <div className={`border-r border-border overflow-y-auto transition-all duration-500 ${results ? "w-full lg:w-[320px]" : "w-full lg:w-[400px]"
-          }`}>
+        <div className="border-r border-border overflow-hidden w-full lg:w-[360px] lg:shrink-0 h-screen sticky top-0">
           <InputPanel onAnalyze={handleAnalyze} isLoading={isLoading} />
         </div>
       )}
@@ -201,8 +200,8 @@ export default function Home() {
                       )}
                     </div>
                     <span className={`text-xs ${step.status === "pending" ? "text-muted-foreground/40"
-                        : step.status === "error" ? "text-destructive"
-                          : "text-foreground"
+                      : step.status === "error" ? "text-destructive"
+                        : "text-foreground"
                       }`}>
                       {step.label}
                     </span>
@@ -252,5 +251,13 @@ export default function Home() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+      <HomeContent />
+    </Suspense>
   )
 }

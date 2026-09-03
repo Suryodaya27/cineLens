@@ -6,6 +6,7 @@ Searches for clothing, furniture, products, electronics, etc.
 """
 
 import json
+import os
 import requests
 from bs4 import BeautifulSoup
 from typing import Dict, List, Optional
@@ -241,7 +242,7 @@ class AmazonShopper:
     
     def search_amazon(self, query: str, max_results: int = 5) -> List[Dict]:
         """
-        Search Amazon and scrape results.
+        Search for products via SerpAPI Google Shopping.
         
         Args:
             query: Search query
@@ -255,37 +256,41 @@ class AmazonShopper:
         
         print(f"  🔍 Searching: {query}")
         
-        # Build search URL
-        encoded_query = quote(query)
-        search_url = f"{self.base_url}/s?k={encoded_query}"
+        serpapi_key = os.getenv('SERPAPI_KEY')
+        if not serpapi_key:
+            print(f"  ⚠️  SERPAPI_KEY not set, skipping search")
+            return []
         
         try:
-            # Add random delay to be polite
-            time.sleep(random.uniform(1, 2))
+            params = {
+                'engine': 'google_shopping',
+                'q': query,
+                'api_key': serpapi_key,
+                'num': max_results,
+                'gl': 'in' if self.region == 'in' else 'us',
+            }
             
-            response = requests.get(search_url, headers=self.headers, timeout=10)
+            response = requests.get('https://serpapi.com/search', params=params, timeout=15)
             response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
+            data = response.json()
             
             products = []
-            
-            # Find product cards
-            items = soup.find_all('div', {'data-component-type': 's-search-result'})
-            
-            for item in items[:max_results]:
-                try:
-                    product = self._parse_product(item)
-                    if product:
-                        products.append(product)
-                except Exception as e:
-                    continue
+            for item in data.get('shopping_results', [])[:max_results]:
+                products.append({
+                    'title': item.get('title', ''),
+                    'price': item.get('extracted_price') or item.get('price', ''),
+                    'url': item.get('link', ''),
+                    'image': item.get('thumbnail', ''),
+                    'rating': item.get('rating'),
+                    'reviews': item.get('reviews'),
+                    'source': item.get('source', 'Google Shopping'),
+                })
             
             print(f"  ✓ Found {len(products)} products")
             return products
         
         except Exception as e:
-            print(f"  ⚠️  Error searching Amazon: {e}")
+            print(f"  ⚠️  Error searching: {e}")
             return []
     
     def _parse_product(self, item) -> Optional[Dict]:

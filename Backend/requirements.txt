@@ -20,6 +20,9 @@ onnxruntime>=1.16.0
 # Vector database
 psycopg2-binary>=2.9.9
 
+# Job queue
+redis>=5.0.0
+
 # Vision LLM
 ollama>=0.1.0
 

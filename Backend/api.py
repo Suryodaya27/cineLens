@@ -396,11 +396,18 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
 
 
 # ---------------------------------------------------------------------------
-# SSE streaming endpoint
+# Redis job queue + SSE streaming
 # ---------------------------------------------------------------------------
 
 import asyncio
-import cv2
+import uuid
+import redis as _redis
+
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+JOB_QUEUE = 'cinelens:jobs'
+
+def _get_redis():
+    return _redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 def _sse(event: str, data: dict) -> str:
     """Format a single SSE message."""
@@ -409,238 +416,66 @@ def _sse(event: str, data: dict) -> str:
 
 @app.post("/analyze-stream")
 async def analyze_image_stream(request: AnalyzeRequest):
-    """Same as /analyze but streams progress events via SSE."""
+    """Enqueue job to Redis worker and stream progress via SSE."""
+
+    r = _get_redis()
+    job_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+    # Enqueue job
+    job_payload = {
+        "job_id": job_id,
+        "params": {
+            "image_url": str(request.image_url),
+            "movie_name": request.movie_name,
+            "enable_vision": request.enable_vision,
+            "similarity_threshold": request.similarity_threshold,
+            "max_cast": request.max_cast,
+            "vision_model": request.vision_model,
+        }
+    }
+    r.rpush(JOB_QUEUE, json.dumps(job_payload))
+    r.hset(f"job:{job_id}", "status", "queued")
 
     async def generate():
-        start_time = datetime.now()
-        request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        temp_request_dir = TEMP_DIR / request_id
-        temp_input_dir = temp_request_dir / "input"
-        temp_output_dir = temp_request_dir / "output"
-        temp_input_dir.mkdir(parents=True, exist_ok=True)
-        temp_output_dir.mkdir(parents=True, exist_ok=True)
+        """Subscribe to the job's pub/sub channel and forward events as SSE."""
+        sub = _get_redis()  # separate connection for blocking subscribe
+        pubsub = sub.pubsub()
+        pubsub.subscribe(f"job:{job_id}")
 
         try:
-            # --- Step 1: Download image ---
-            yield _sse("progress", {"step": "download", "message": "Downloading image..."})
-            await asyncio.sleep(0)  # flush
+            # First, replay any events we may have missed (worker started fast)
+            existing = sub.lrange(f"job:{job_id}:events", 0, -1)
+            for raw in existing:
+                msg = json.loads(raw)
+                yield _sse(msg["event"], msg["data"])
+                if msg["event"] in ("complete", "error"):
+                    return
 
-            image_filename = f"input_image_{request_id}.jpg"
-            image_path = temp_input_dir / image_filename
-            if not download_image(str(request.image_url), image_path):
-                yield _sse("error", {"message": "Failed to download image"})
-                return
-
-            yield _sse("progress", {"step": "download", "message": "Image downloaded", "done": True})
-            await asyncio.sleep(0)
-
-            # --- Step 2: Initialize pipeline ---
-            yield _sse("progress", {"step": "init", "message": "Initializing AI pipeline..."})
-            await asyncio.sleep(0)
-
-            vision_model = request.vision_model or DEFAULT_VISION_MODEL
-            pipeline = UpdatedAgenticPipeline(
-                yolo_model="yolov8n.pt",
-                vision_model=vision_model,
-                use_vision_analysis=bool(request.enable_vision)
-            )
-
-            yield _sse("progress", {"step": "init", "message": "Pipeline ready", "done": True})
-            await asyncio.sleep(0)
-
-            # --- Step 3: Prepare movie cast ---
-            yield _sse("progress", {"step": "cast", "message": f"Looking up cast for \"{request.movie_name}\"..."})
-            await asyncio.sleep(0)
-
-            movie_context = pipeline.prepare_movie_cast(request.movie_name)
-            if not movie_context:
-                yield _sse("error", {"message": f"Could not find movie: {request.movie_name}"})
-                pipeline.close()
-                return
-
-            cast_actor_ids = [m['id'] for m in movie_context['cast']]
-            yield _sse("progress", {
-                "step": "cast",
-                "message": f"Found {len(cast_actor_ids)} cast members for {movie_context['title']} ({movie_context['year']})",
-                "done": True
-            })
-            await asyncio.sleep(0)
-
-            # --- Step 4: Detect objects ---
-            yield _sse("progress", {"step": "detect", "message": "Detecting objects with YOLO..."})
-            await asyncio.sleep(0)
-
-            all_detections = pipeline.detect_all_objects(str(image_path))
-            total = sum(len(v) for v in all_detections.values())
-            people_count = len(all_detections['people'])
-
-            yield _sse("progress", {
-                "step": "detect",
-                "message": f"Detected {total} objects ({people_count} people)",
-                "done": True
-            })
-            await asyncio.sleep(0)
-
-            # --- Step 5: Identify each person ---
-            output_path = Path(str(temp_output_dir))
-            output_path.mkdir(parents=True, exist_ok=True)
-            identified_people = []
-
-            for idx, detection in enumerate(all_detections['people'], 1):
-                yield _sse("progress", {
-                    "step": "identify",
-                    "message": f"Identifying person {idx}/{people_count}..."
-                })
-                await asyncio.sleep(0)
-
-                cropped = pipeline.crop_person(str(image_path), detection['bbox'])
-                input_name = Path(str(image_path)).stem
-                crop_filename = f"{input_name}_person_{idx}.png"
-                crop_path = output_path / crop_filename
-                cv2.imwrite(str(crop_path), cropped)
-
-                match = pipeline.identify_person(cropped, cast_actor_ids, request.similarity_threshold)
-
-                vision_details = {}
-                if pipeline.use_vision_analysis:
-                    yield _sse("progress", {
-                        "step": "identify",
-                        "message": f"Analyzing person {idx}/{people_count} with vision model..."
-                    })
-                    await asyncio.sleep(0)
-                    vision_details = pipeline.analyze_person_details(str(crop_path))
-
-                if match:
-                    cast_member = next(
-                        (m for m in movie_context['cast'] if m['id'] == match['actor_id']),
-                        None
-                    )
-                    person_data = {
-                        'name': match['actor_name'],
-                        'profession': 'Actor',
-                        'character': cast_member['character'] if cast_member else None,
-                        'confidence': match['confidence'],
-                        'similarity_score': match['similarity'],
-                        'matched_image': match['image_path'],
-                        'gender': vision_details.get('gender', 'unknown'),
-                        'facial_features': vision_details.get('facial_features', 'Identified via face recognition'),
-                        'clothing': vision_details.get('clothing', {
-                            'description': 'Not analyzed', 'colors': [],
-                            'style': 'Not analyzed', 'accessories': []
-                        }),
-                        'pose': vision_details.get('pose', 'Not analyzed'),
-                        'expression': vision_details.get('expression', 'Not analyzed'),
-                        'held_items': vision_details.get('held_items', []),
-                        'object_class': 'person',
-                        'crop_image': str(crop_path),
-                        'detection_confidence': detection['confidence']
-                    }
-                    yield _sse("progress", {
-                        "step": "identify",
-                        "message": f"Identified: {match['actor_name']} ({match['confidence']}%)",
-                        "done": True
-                    })
+            # Now listen for new events
+            seen = len(existing)
+            while True:
+                message = pubsub.get_message(timeout=1.0)
+                if message and message['type'] == 'message':
+                    msg = json.loads(message['data'])
+                    yield _sse(msg["event"], msg["data"])
+                    if msg["event"] in ("complete", "error"):
+                        return
                 else:
-                    person_data = {
-                        'name': None, 'profession': None, 'character': None,
-                        'confidence': 0, 'gender': 'unknown',
-                        'facial_features': 'Face detected but not identified',
-                        'clothing': {'description': 'Not analyzed', 'colors': [],
-                                     'style': 'Not analyzed', 'accessories': []},
-                        'pose': 'Not analyzed', 'expression': 'Not analyzed',
-                        'held_items': [], 'object_class': 'person',
-                        'crop_image': str(crop_path),
-                        'detection_confidence': detection['confidence']
-                    }
-                    yield _sse("progress", {
-                        "step": "identify",
-                        "message": f"Person {idx}: unknown (no match above threshold)",
-                        "done": True
-                    })
-                await asyncio.sleep(0)
-                identified_people.append(person_data)
+                    # Check if job finished while we were waiting
+                    status = sub.hget(f"job:{job_id}", "status")
+                    if status in ("complete", "error"):
+                        # Drain any remaining events
+                        remaining = sub.lrange(f"job:{job_id}:events", seen, -1)
+                        for raw in remaining:
+                            msg = json.loads(raw)
+                            yield _sse(msg["event"], msg["data"])
+                        return
 
-            # --- Step 6: Scene analysis ---
-            yield _sse("progress", {"step": "scene", "message": "Analyzing scene..."})
-            await asyncio.sleep(0)
-
-            scene_analysis = pipeline.analyze_scene_with_vision(str(image_path))
-
-            yield _sse("progress", {"step": "scene", "message": "Scene analysis complete", "done": True})
-            await asyncio.sleep(0)
-
-            # --- Step 7: Process other objects ---
-            result = {
-                'source_image': Path(str(image_path)).name,
-                'movie_context': {
-                    'title': movie_context['title'],
-                    'year': movie_context['year'],
-                    'cast': [m['name'] for m in movie_context['cast']]
-                },
-                'scene_analysis': scene_analysis,
-                'detections_summary': {
-                    'people': len(identified_people),
-                    'products': len(all_detections['products']),
-                    'animals': len(all_detections['animals']),
-                    'vehicles': len(all_detections['vehicles']),
-                    'electronics': len(all_detections['electronics']),
-                    'furniture': len(all_detections['furniture']),
-                    'other_objects': len(all_detections['other'])
-                },
-                'people': identified_people,
-                'products': [], 'animals': [], 'vehicles': [],
-                'electronics': [], 'furniture': [], 'other_objects': []
-            }
-
-            if pipeline.use_vision_analysis:
-                other_cats = [
-                    ('products', 'products'), ('animals', 'animal'),
-                    ('vehicles', 'vehicle'), ('electronics', 'electronics'),
-                    ('furniture', 'furniture'), ('other', 'default')
-                ]
-                for det_key, cat_key in other_cats:
-                    items = all_detections[det_key]
-                    if items:
-                        yield _sse("progress", {
-                            "step": "objects",
-                            "message": f"Analyzing {len(items)} {det_key}..."
-                        })
-                        await asyncio.sleep(0)
-                        out_key = 'other_objects' if det_key == 'other' else det_key
-                        result[out_key] = pipeline._process_objects(
-                            str(image_path), items, cat_key, output_path, scene_analysis
-                        )
-
-            pipeline.close()
-
-            # --- Step 8: Upload crops to ImgBB ---
-            yield _sse("progress", {"step": "upload", "message": "Uploading cropped images..."})
-            await asyncio.sleep(0)
-
-            if IMGBB_API_KEY:
-                uploader = ImgBBUploader(IMGBB_API_KEY)
-                result = upload_cropped_images(result, uploader)
-
-            yield _sse("progress", {"step": "upload", "message": "Uploads complete", "done": True})
-            await asyncio.sleep(0)
-
-            processing_time = (datetime.now() - start_time).total_seconds()
-
-            # --- Final: send full result ---
-            yield _sse("complete", {
-                "success": True,
-                "message": "Image analyzed successfully",
-                "data": result,
-                "processing_time": processing_time
-            })
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            yield _sse("error", {"message": str(e)})
+                await asyncio.sleep(0)  # yield control
 
         finally:
-            cleanup_temp_files(temp_request_dir)
+            pubsub.unsubscribe()
+            pubsub.close()
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

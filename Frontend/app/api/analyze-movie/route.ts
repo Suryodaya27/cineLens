@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
 				enable_vision: 1,
 				similarity_threshold: 0.4,
 				max_cast: 10,
-				vision_model: "qwen3.8:latest",
 			}),
 		})
 

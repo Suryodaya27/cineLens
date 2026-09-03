@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+cache/
+output/
+temp_api_uploads/
+models/
+*.pt
+*.jpg
+*.png
+.env
+.DS_Store

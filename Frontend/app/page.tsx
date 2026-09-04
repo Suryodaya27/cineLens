@@ -137,7 +137,6 @@ function HomeContent() {
               const resultData = payload.data as Record<string, unknown>
               setSteps((prev) => prev.map((s) => ({ ...s, status: "done" as const })))
               if (resultData) {
-                localStorage.setItem(movieName, JSON.stringify({ success: true, data: resultData }))
                 setResults({ data: resultData } as never)
               }
             } else if (event === "error") {

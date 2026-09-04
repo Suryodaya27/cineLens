@@ -136,7 +136,7 @@ def _reclassify_objects(result: dict) -> dict:
     return result
 
 
-def process_job(r: redis.Redis, job_id: str, params: dict):
+def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None):
     """Run the full analysis pipeline for one job."""
     start_time = datetime.now()
     request_id = job_id
@@ -348,12 +348,18 @@ def process_job(r: redis.Redis, job_id: str, params: dict):
         final = {
             "success": True,
             "message": "Image analyzed successfully",
+            "job_id": job_id,
             "data": result,
             "processing_time": processing_time
         }
         r.hset(f"job:{job_id}", "status", "complete")
         r.hset(f"job:{job_id}", "result", json.dumps(final))
         r.expire(f"job:{job_id}", JOB_TTL)
+
+        # Cache result for future identical requests (24h)
+        if cache_key:
+            r.set(cache_key, json.dumps(final), ex=86400)
+
         publish(r, job_id, "complete", final)
 
         print(f"\n✅ Job {job_id} completed in {processing_time:.1f}s")
@@ -388,6 +394,7 @@ def main():
             job = json.loads(raw)
             job_id = job['job_id']
             params = job['params']
+            cache_key = job.get('cache_key')
 
             print(f"\n{'='*70}")
             print(f"📥 Job received: {job_id}")
@@ -396,7 +403,7 @@ def main():
             print(f"{'='*70}")
 
             r.hset(f"job:{job_id}", "status", "processing")
-            process_job(r, job_id, params)
+            process_job(r, job_id, params, cache_key)
 
         except Exception as e:
             print(f"❌ Failed to process job: {e}")

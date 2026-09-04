@@ -10,7 +10,7 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 - **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built a Redis job queue + worker architecture so FastAPI acts as a thin gateway while a separate worker handles ML inference, with SSE streaming progress through to the browser. Parallelized scene analysis with cast lookup and detection to reduce wall time.
 
-- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen.
+- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Redis-backed result caching returns identical requests instantly (24h TTL). Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen.
 
 ## Architecture
 
@@ -35,17 +35,17 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 ┌──────────────────────────────────────────────────────────────────────┐
 │  FastAPI API Gateway (localhost:8000)                                 │
 │                                                                      │
-│  • Validates request                                                 │
-│  • Enqueues job to Redis                                             │
-│  • Subscribes to Redis pub/sub                                       │
-│  • Streams progress events as SSE                                    │
-│  (No ML work — just message passing)                                 │
+│  • Checks Redis cache (movie_name + image_url hash)                  │
+│  • Cache hit → instant SSE response (no worker needed)               │
+│  • Cache miss → enqueues job to Redis                                │
+│  • Subscribes to Redis pub/sub, streams progress as SSE              │
+│  (No ML work — just message passing + caching)                       │
 └──────────────────┬──────────────────────────▲────────────────────────┘
                    │ enqueue                  │ pub/sub
                    ▼                          │
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Redis (:6379)                                                       │
-│  • Job queue (BLPOP)   • Job status/results   • Pub/sub channels    │
+│  • Job queue (BLPOP)  • Result cache (24h TTL)  • Pub/sub channels  │
 └──────────────────┬──────────────────────────▲────────────────────────┘
                    │ dequeue                  │ publish progress
                    ▼                          │
@@ -74,7 +74,9 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 **Redis worker separation** — FastAPI doesn't run any ML inference. It enqueues jobs and proxies progress events. The worker process handles the heavy lifting. Multiple requests queue up without blocking the web server.
 
-**SSE streaming** — Server-Sent Events from worker → Redis pub/sub → FastAPI → Next.js → browser. The UI shows 9 live progress steps instead of a blank screen for 8 minutes.
+**Result caching** — Every completed analysis is cached in Redis under a deterministic key (`sha256(movie_name + image_url)`, 24h TTL). Identical requests return instantly from cache without touching the worker, YOLO, Ollama, or any external API. No client-side localStorage needed.
+
+**SSE streaming** — Server-Sent Events from worker → Redis pub/sub → FastAPI → Next.js → browser. The UI shows 9 live progress steps instead of a blank screen for 8 minutes. Cache hits skip directly to the complete event.
 
 **Parallel scene analysis** — Scene analysis (Ollama, 30-60s) starts immediately after image download and runs in a background thread while TMDB lookup, YOLO detection, and face matching happen on the main thread. Saves 10-15s of wall time.
 
@@ -88,7 +90,7 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 |-------|------|
 | Frontend | Next.js 16, Tailwind CSS, SSE streaming |
 | API Gateway | FastAPI, Uvicorn |
-| Job Queue | Redis (pub/sub + BLPOP queue) |
+| Job Queue + Cache | Redis (pub/sub, BLPOP queue, result cache) |
 | Object Detection | YOLOv8 |
 | Face Recognition | InsightFace (512-dim embeddings) |
 | Vector Search | PostgreSQL + pgvector (HNSW index) |

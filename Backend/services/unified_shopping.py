@@ -180,6 +180,8 @@ class UnifiedShopper:
         # People's clothing and accessories (text search works better)
         for idx, person in enumerate(analysis.get('people', []), 1):
             clothing = person.get('clothing', {})
+            if isinstance(clothing, str):
+                clothing = {'description': clothing, 'colors': [], 'style': '', 'accessories': []}
             
             # Main outfit
             if clothing.get('description'):

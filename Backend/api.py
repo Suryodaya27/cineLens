@@ -400,14 +400,20 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
 # ---------------------------------------------------------------------------
 
 import asyncio
-import uuid
+import hashlib
 import redis as _redis
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 JOB_QUEUE = 'cinelens:jobs'
+CACHE_TTL = 86400  # cached results expire after 24 hours
 
 def _get_redis():
     return _redis.Redis.from_url(REDIS_URL, decode_responses=True)
+
+def _cache_key(image_url: str, movie_name: str) -> str:
+    """Deterministic cache key from image URL + movie name."""
+    raw = f"{movie_name.strip().lower()}:{image_url.strip()}"
+    return f"cache:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
 
 def _sse(event: str, data: dict) -> str:
     """Format a single SSE message."""
@@ -416,14 +422,25 @@ def _sse(event: str, data: dict) -> str:
 
 @app.post("/analyze-stream")
 async def analyze_image_stream(request: AnalyzeRequest):
-    """Enqueue job to Redis worker and stream progress via SSE."""
+    """Enqueue job to Redis worker and stream progress via SSE. Returns cached result if available."""
 
     r = _get_redis()
-    job_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    cache_k = _cache_key(str(request.image_url), request.movie_name)
 
-    # Enqueue job
+    # Check cache first
+    cached = r.get(cache_k)
+    if cached:
+        async def from_cache():
+            result = json.loads(cached)
+            yield _sse("progress", {"step": "download", "message": "Cache hit", "done": True})
+            yield _sse("complete", result)
+        return StreamingResponse(from_cache(), media_type="text/event-stream")
+
+    # No cache — enqueue job
+    job_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     job_payload = {
         "job_id": job_id,
+        "cache_key": cache_k,
         "params": {
             "image_url": str(request.image_url),
             "movie_name": request.movie_name,
@@ -480,7 +497,21 @@ async def analyze_image_stream(request: AnalyzeRequest):
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
-@app.post("/api/more-movies", response_model=ActorMoviesResponse)
+@app.get("/jobs/{job_id}")
+async def get_job_result(job_id: str):
+    """Retrieve a stored job result from Redis."""
+    r = _get_redis()
+    status = r.hget(f"job:{job_id}", "status")
+    if not status:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if status == "processing" or status == "queued":
+        return JSONResponse({"status": status, "data": None})
+    if status == "error":
+        return JSONResponse({"status": "error", "data": None})
+    raw = r.hget(f"job:{job_id}", "result")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Result expired")
+    return JSONResponse({"status": "complete", **json.loads(raw)})
 async def get_actor_movies(request: ActorMoviesRequest):
     """
     Get actor's movies from TMDB.
@@ -629,10 +660,13 @@ async def get_shopping_recommendations(request: ShoppingRequest, background_task
         print(f"  [{i}] {person.get('name', 'Unknown')} ({person.get('gender', 'Unknown')})")
         
         clothing = person.get('clothing', {})
-        print(f"      Clothing description: {clothing.get('description', 'N/A')}")
-        print(f"      Colors: {clothing.get('colors', [])}")
-        print(f"      Style: {clothing.get('style', 'N/A')}")
-        print(f"      Accessories: {clothing.get('accessories', [])}")
+        if isinstance(clothing, str):
+            print(f"      Clothing: {clothing}")
+        else:
+            print(f"      Clothing description: {clothing.get('description', 'N/A')}")
+            print(f"      Colors: {clothing.get('colors', [])}")
+            print(f"      Style: {clothing.get('style', 'N/A')}")
+            print(f"      Accessories: {clothing.get('accessories', [])}")
         
         held_items = person.get('held_items', [])
         if held_items:

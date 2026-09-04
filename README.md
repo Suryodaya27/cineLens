@@ -8,9 +8,9 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 - **Task:** Build an end-to-end system that takes a movie frame + movie name, identifies the specific actors from that film's cast, describes the scene in detail, and connects detected items to purchasable products — all with real-time progress feedback.
 
-- **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built SSE streaming from FastAPI through Next.js to show live pipeline progress.
+- **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built a Redis job queue + worker architecture so FastAPI acts as a thin gateway while a separate worker handles ML inference, with SSE streaming progress through to the browser. Parallelized scene analysis with cast lookup and detection to reduce wall time.
 
-- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis with scene descriptions, clothing details, and object analysis in 2–8 minutes on local hardware. Shopping recommendations via Amazon text search + SerpAPI visual search. All with a live progress UI instead of a blank loading screen.
+- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen.
 
 ## Architecture
 
@@ -33,57 +33,95 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
                        │ SSE                  │
                        ▼                      │
 ┌──────────────────────────────────────────────────────────────────────┐
-│  FastAPI Backend (localhost:8000)                                     │
+│  FastAPI API Gateway (localhost:8000)                                 │
 │                                                                      │
-│  Download → Init YOLO+InsightFace → TMDB cast lookup                │
-│  → YOLO detect → Face match via pgvector                            │
-│  → Vision LLM analysis (optional) → Upload crops to ImgBB           │
-│  → Stream "complete" event with full result                          │
+│  • Validates request                                                 │
+│  • Enqueues job to Redis                                             │
+│  • Subscribes to Redis pub/sub                                       │
+│  • Streams progress events as SSE                                    │
+│  (No ML work — just message passing)                                 │
+└──────────────────┬──────────────────────────▲────────────────────────┘
+                   │ enqueue                  │ pub/sub
+                   ▼                          │
+┌──────────────────────────────────────────────────────────────────────┐
+│  Redis (:6379)                                                       │
+│  • Job queue (BLPOP)   • Job status/results   • Pub/sub channels    │
+└──────────────────┬──────────────────────────▲────────────────────────┘
+                   │ dequeue                  │ publish progress
+                   ▼                          │
+┌──────────────────────────────────────────────────────────────────────┐
+│  Worker (python worker.py)                                           │
+│                                                                      │
+│  Main thread:              Background thread:                        │
+│  1. Download image ──────► Scene analysis starts (Ollama)            │
+│  2. Init YOLO+InsightFace   │ (runs while steps 3-5 use CPU)        │
+│  3. TMDB cast lookup        │                                        │
+│  4. YOLO detection          │                                        │
+│  5. Face match (pgvector)   │                                        │
+│  6. .join() ◄───────────────┘                                        │
+│  7. Person/object vision analysis (with scene context)               │
+│  8. Reclassify misdetected objects                                   │
+│  9. Upload crops to ImgBB                                            │
+│                                                                      │
+│  Publishes progress events to Redis after each step                  │
 └───────────┬──────────────────┬──────────────────┬────────────────────┘
             ▼                  ▼                  ▼
    PostgreSQL+pgvector     TMDB API         Ollama (local LLM)
    (face embeddings)    (cast, images)     (scene/object analysis)
 ```
 
-**SSE event flow:** The pipeline streams progress events (`imagebb` → `progress` × N → `complete` or `error`) so the UI updates step-by-step: upload → download → init → cast → detect → identify → scene → objects → upload crops.
+## Key Design Decisions
+
+**Redis worker separation** — FastAPI doesn't run any ML inference. It enqueues jobs and proxies progress events. The worker process handles the heavy lifting. Multiple requests queue up without blocking the web server.
+
+**SSE streaming** — Server-Sent Events from worker → Redis pub/sub → FastAPI → Next.js → browser. The UI shows 9 live progress steps instead of a blank screen for 8 minutes.
+
+**Parallel scene analysis** — Scene analysis (Ollama, 30-60s) starts immediately after image download and runs in a background thread while TMDB lookup, YOLO detection, and face matching happen on the main thread. Saves 10-15s of wall time.
+
+**Scene-context injection** — YOLO only knows 80 COCO classes and often misclassifies objects (gun → cell phone, armor → vehicle). The scene analysis result is injected into each object's vision prompt so the LLM can override YOLO's label.
+
+**Post-vision reclassification** — After the vision model describes each object, a keyword check moves misclassified items to the correct UI category (e.g. "Iron Man Armored Suit" moves from Vehicles to Other Objects).
 
 ## Tech Stack
 
 | Layer | Tech |
 |-------|------|
 | Frontend | Next.js 16, Tailwind CSS, SSE streaming |
-| Backend | FastAPI, Uvicorn |
-| Object detection | YOLOv8 |
-| Face recognition | InsightFace (512-dim embeddings) |
-| Vector search | PostgreSQL + pgvector |
-| Cast data | TMDB API |
-| Vision analysis | Ollama (qwen3.8, llama3.2-vision, etc.) |
-| Image hosting | ImgBB |
-| Shopping | Amazon scraping + SerpAPI visual search |
+| API Gateway | FastAPI, Uvicorn |
+| Job Queue | Redis (pub/sub + BLPOP queue) |
+| Object Detection | YOLOv8 |
+| Face Recognition | InsightFace (512-dim embeddings) |
+| Vector Search | PostgreSQL + pgvector (HNSW index) |
+| Cast Data | TMDB API |
+| Vision Analysis | Ollama (local LLM) |
+| Image Hosting | ImgBB |
+| Shopping | SerpAPI Google Shopping |
 
 ## Project Structure
 
 ```
-├── Frontend/                        Next.js app
-│   ├── app/page.tsx                 Main page (SSE progress + results)
-│   ├── app/api/analyze-movie/       API route (ImgBB upload + SSE proxy)
-│   ├── components/input-panel.tsx   Movie name + image input
-│   └── components/output-panel.tsx  Results display
+├── docker-compose.yml               All services (postgres, redis, api, worker, frontend)
+├── Frontend/
+│   ├── Dockerfile
+│   ├── app/page.tsx                  Main page (SSE progress + results)
+│   ├── app/api/analyze-movie/        API route (ImgBB upload + SSE proxy)
+│   ├── components/input-panel.tsx    Movie name + image input
+│   └── components/output-panel.tsx   Results display
 │
 ├── Backend/
-│   ├── api.py                       FastAPI entry point (/analyze, /analyze-stream)
-│   ├── pipelines/                   ML modules
-│   │   ├── updated_agentic_pipeline.py  YOLO + InsightFace + vision LLM
-│   │   ├── crop_pipeline.py             YOLO cropping
-│   │   └── vision_classifier.py         Multi-provider vision classifier
-│   ├── services/                    Business logic
-│   │   ├── unified_shopping.py      Shopping orchestrator
-│   │   ├── amazon_shopping.py       Amazon text search
-│   │   ├── visual_search.py         SerpAPI visual search
-│   │   └── tmdb_enrichment.py       TMDB actor enrichment
-│   ├── scripts/                     Debug utilities
-│   ├── tests/                       Integration tests
-│   └── docs/                        Detailed documentation
+│   ├── Dockerfile
+│   ├── api.py                        FastAPI gateway (enqueue + SSE proxy)
+│   ├── worker.py                     ML pipeline worker (Redis consumer)
+│   ├── pipelines/                    ML modules
+│   │   └── updated_agentic_pipeline.py  YOLO + InsightFace + vision LLM
+│   ├── services/                     Business logic
+│   │   ├── unified_shopping.py       Shopping orchestrator
+│   │   ├── amazon_shopping.py        SerpAPI Google Shopping
+│   │   ├── visual_search.py          SerpAPI visual search
+│   │   └── tmdb_enrichment.py        TMDB actor enrichment
+│   ├── scripts/                      Debug utilities
+│   ├── tests/                        Integration tests
+│   └── docs/                         Detailed documentation
 ```
 
 ## Prerequisites
@@ -93,46 +131,42 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 **API keys (all free):**
 - [TMDB](https://www.themoviedb.org/settings/api) — cast data and actor images (required)
 - [ImgBB](https://api.imgbb.com/) — image hosting (required)
-- [SerpAPI](https://serpapi.com/users/sign_up) — visual product search (optional, 100 free/month)
+- [SerpAPI](https://serpapi.com/users/sign_up) — shopping search (optional, 250 free/month)
 
 **Optional:** [Ollama](https://ollama.com) — only needed for vision analysis (`enable_vision=1`)
 
 ## Quick Start
 
-### 1. Database
+### Option A: Docker Compose (everything)
 
 ```bash
-docker run -d --name pgvector \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=face_embeddings \
-  -p 5432:5432 pgvector/pgvector:pg16
-
-docker exec pgvector psql -U postgres -c "CREATE DATABASE face_recognition;"
-docker exec pgvector psql -U postgres -d face_recognition -c "CREATE EXTENSION IF NOT EXISTS vector;"
+cp Backend/.env.example Backend/.env   # fill in API keys
+docker-compose up -d --build
+# Ollama runs on host: ollama pull qwen3.8:latest
 ```
 
-### 2. Backend
+### Option B: Local development
 
 ```bash
-cd Backend
-python -m venv .venv && source .venv/bin/activate
+# 1. Infrastructure
+docker-compose up -d postgres redis
+
+# 2. Backend API
+cd Backend && python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # fill in TMDB_API_KEY and IMGBB_API_KEY
 python api.py           # → http://localhost:8000
-```
 
-### 3. Frontend
+# 3. Worker (separate terminal)
+cd Backend && source .venv/bin/activate
+python worker.py
 
-```bash
-cd Frontend
-npm install
-cp .env.example .env.local   # fill in IMGBB_API_KEY
-npm run dev                   # → http://localhost:3000
-```
+# 4. Frontend (separate terminal)
+cd Frontend && npm install
+cp .env.example .env.local
+npm run dev             # → http://localhost:3000
 
-### 4. Vision model (optional)
-
-```bash
+# 5. Vision model (optional)
 ollama pull qwen3.8:latest
 ```
 
@@ -141,7 +175,7 @@ ollama pull qwen3.8:latest
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/analyze` | Analyze image (JSON response) |
-| POST | `/analyze-stream` | Analyze image (SSE streaming) |
+| POST | `/analyze-stream` | Analyze image (SSE via Redis worker) |
 | POST | `/api/more-movies` | Actor filmography from TMDB |
 | POST | `/api/shopping-recommendations` | Shopping links for detected items |
 | GET | `/health` | Health check |
@@ -160,8 +194,9 @@ Environment variables in `Backend/.env`:
 |----------|----------|-------------|
 | `TMDB_API_KEY` | Yes | Cast data |
 | `IMGBB_API_KEY` | Yes | Image hosting |
-| `SERPAPI_KEY` | No | Visual product search |
+| `SERPAPI_KEY` | No | Shopping search |
 | `VISION_MODEL` | No | Ollama model (default: `qwen3.8:latest`) |
+| `REDIS_URL` | No | Redis connection (default: `redis://localhost:6379/0`) |
 | `POSTGRES_*` | No | DB config (defaults: localhost/5432/face_recognition/postgres/postgres) |
 
 ## Docs

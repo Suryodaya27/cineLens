@@ -12,6 +12,7 @@ import time
 import cv2
 import redis
 import traceback
+import threading
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
@@ -170,7 +171,16 @@ def process_job(r: redis.Redis, job_id: str, params: dict):
         )
         publish(r, job_id, "progress", {"step": "init", "message": "Pipeline ready", "done": True})
 
-        # Step 3: Cast
+        # Start scene analysis in background (runs on Ollama while steps 3-5 use CPU/network)
+        scene_result = {}
+        scene_thread = None
+        if pipeline.use_vision_analysis:
+            def _run_scene():
+                scene_result['data'] = pipeline.analyze_scene_with_vision(str(image_path))
+            scene_thread = threading.Thread(target=_run_scene, daemon=True)
+            scene_thread.start()
+
+        # Step 3: Cast (runs while Ollama is busy with scene analysis)
         publish(r, job_id, "progress", {"step": "cast", "message": f'Looking up cast for "{movie_name}"...'})
         movie_context = pipeline.prepare_movie_cast(movie_name)
         if not movie_context:
@@ -262,9 +272,11 @@ def process_job(r: redis.Redis, job_id: str, params: dict):
                 })
             identified_people.append(person_data)
 
-        # Step 6: Scene analysis
+        # Step 6: Scene analysis — wait for background thread to finish
         publish(r, job_id, "progress", {"step": "scene", "message": "Analyzing scene..."})
-        scene_analysis = pipeline.analyze_scene_with_vision(str(image_path))
+        if scene_thread:
+            scene_thread.join()  # wait for Ollama to finish (may already be done)
+        scene_analysis = scene_result.get('data', {})
         publish(r, job_id, "progress", {"step": "scene", "message": "Scene analysis complete", "done": True})
 
         # Step 7: Other objects

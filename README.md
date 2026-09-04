@@ -2,6 +2,8 @@
 
 AI-powered movie scene analysis — identify actors, detect objects, analyze scenes, and find shopping links from a single movie frame.
 
+[![Demo](https://img.shields.io/badge/YouTube-Demo-red?logo=youtube)](https://youtu.be/hdk6e16dqUo)
+
 ## Highlights
 
 - **Situation:** Movie and entertainment platforms need to extract structured metadata from video frames — who's on screen, what they're wearing, what objects are visible — but manual tagging doesn't scale and generic vision APIs lack movie-specific context.

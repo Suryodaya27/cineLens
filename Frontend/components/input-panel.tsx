@@ -84,8 +84,8 @@ export default function InputPanel({ onAnalyze, isLoading }: InputPanelProps) {
 								key={mode}
 								onClick={() => setUploadMode(mode)}
 								className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${uploadMode === mode
-										? "bg-background text-foreground shadow-sm"
-										: "text-muted-foreground hover:text-foreground"
+									? "bg-background text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
 									}`}
 							>
 								{mode === "url" ? <Link2 className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
@@ -129,7 +129,9 @@ export default function InputPanel({ onAnalyze, isLoading }: InputPanelProps) {
 							<img
 								src={preview}
 								alt="Preview"
+								referrerPolicy="no-referrer"
 								className="w-full h-48 object-cover"
+								onError={() => setPreview(null)}
 							/>
 						</div>
 					</div>

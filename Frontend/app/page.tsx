@@ -116,15 +116,22 @@ function HomeContent() {
               updateStep("download", "active")
             } else if (event === "progress") {
               const uiStep = STEP_MAP[payload.step as string] || (payload.step as string)
+              const msg = payload.message as string
               if (payload.done) {
-                updateStep(uiStep, "done", payload.message as string)
+                updateStep(uiStep, "done", msg)
                 setSteps((prev) => {
                   const idx = prev.findIndex((s) => s.id === uiStep)
                   const next = prev.find((s, i) => i > idx && s.status === "pending")
                   return next ? prev.map((s) => (s.id === next.id ? { ...s, status: "active" } : s)) : prev
                 })
               } else {
-                updateStep(uiStep, "active", payload.message as string)
+                setSteps((prev) => {
+                  const currentActive = prev.find((s) => s.status === "active")
+                  if (!currentActive || currentActive.id === uiStep) {
+                    return prev.map((s) => (s.id === uiStep ? { ...s, status: "active", detail: msg } : s))
+                  }
+                  return prev.map((s) => (s.id === uiStep ? { ...s, detail: msg } : s))
+                })
               }
             } else if (event === "complete") {
               const resultData = payload.data as Record<string, unknown>

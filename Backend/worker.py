@@ -142,7 +142,7 @@ def _reclassify_objects(result: dict) -> dict:
     return result
 
 
-def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None):
+def process_job(r: redis.Redis, job_id: str, params: dict, pipeline: UpdatedAgenticPipeline, cache_key: str = None):
     """Run the full analysis pipeline for one job."""
     start_time = datetime.now()
     request_id = job_id
@@ -156,9 +156,7 @@ def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None
         try:
             image_url = params['image_url']
             movie_name = params['movie_name']
-            enable_vision = params.get('enable_vision', 0)
             similarity_threshold = params.get('similarity_threshold', 0.6)
-            vision_model = params.get('vision_model') or DEFAULT_VISION_MODEL
 
             logger.info("Job started", extra={"step": "start", "movie": movie_name, "image_url": image_url})
 
@@ -174,16 +172,8 @@ def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None
             logger.info("Image downloaded", extra={"step": "download"})
             publish(r, job_id, "progress", {"step": "download", "message": "Image downloaded", "done": True})
 
-            # Step 2: Init pipeline
-            publish(r, job_id, "progress", {"step": "init", "message": "Initializing AI pipeline..."})
-            logger.info("Initializing pipeline", extra={"step": "init", "detail": vision_model})
-            pipeline = UpdatedAgenticPipeline(
-                yolo_model="yolov8n.pt",
-                vision_model=vision_model,
-                use_vision_analysis=bool(enable_vision)
-            )
-            logger.info("Pipeline ready", extra={"step": "init"})
-            publish(r, job_id, "progress", {"step": "init", "message": "Pipeline ready", "done": True})
+            # Step 2: Pipeline already initialized (reused across jobs)
+            publish(r, job_id, "progress", {"step": "init", "message": "AI models ready", "done": True})
 
             # Start scene analysis in background (runs on Ollama while steps 3-5 use CPU/network)
             scene_result = {}
@@ -202,7 +192,6 @@ def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None
             if not movie_context:
                 logger.error("Movie not found in TMDB", extra={"step": "cast", "movie": movie_name})
                 publish(r, job_id, "error", {"message": f"Could not find movie: {movie_name}"})
-                pipeline.close()
                 r.hset(f"job:{job_id}", "status", "error")
                 return
             cast_actor_ids = [m['id'] for m in movie_context['cast']]
@@ -343,8 +332,6 @@ def process_job(r: redis.Redis, job_id: str, params: dict, cache_key: str = None
                 # Reclassify objects if vision model disagrees with YOLO's category
                 result = _reclassify_objects(result)
 
-            pipeline.close()
-
             # Step 8: Upload crops
             publish(r, job_id, "progress", {"step": "upload", "message": "Uploading cropped images..."})
             logger.info("Uploading crops to ImgBB", extra={"step": "upload"})
@@ -408,6 +395,15 @@ def main():
     r = get_redis()
     logger.info("Worker started", extra={"detail": f"queue={JOB_QUEUE} redis={REDIS_URL} vision={DEFAULT_VISION_MODEL}"})
 
+    # Initialize pipeline once — reuse across all jobs to avoid OOM from repeated model loads
+    logger.info("Initializing pipeline (one-time)", extra={"step": "init", "detail": DEFAULT_VISION_MODEL})
+    pipeline = UpdatedAgenticPipeline(
+        yolo_model="yolov8n.pt",
+        vision_model=DEFAULT_VISION_MODEL,
+        use_vision_analysis=True
+    )
+    logger.info("Pipeline ready", extra={"step": "init"})
+
     while True:
         try:
             # BLPOP blocks until a job is available
@@ -428,7 +424,7 @@ def main():
             })
 
             r.hset(f"job:{job_id}", "status", "processing")
-            process_job(r, job_id, params, cache_key)
+            process_job(r, job_id, params, pipeline, cache_key)
 
         except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
             logger.warning("Redis connection lost, reconnecting in 2s")

@@ -39,6 +39,7 @@ interface OutputPanelProps {
 	results: {
 		success?: boolean
 		message?: string
+		job_id?: string
 		data: {
 			source_image: string
 			movie_context: {
@@ -280,6 +281,9 @@ export default function OutputPanel({ results }: OutputPanelProps) {
 										<Clock className="w-3 h-3" />
 										{results.processing_time.toFixed(1)}s
 									</span>
+								)}
+								{results.job_id && (
+									<span className="font-mono text-muted-foreground/50">{results.job_id}</span>
 								)}
 							</div>
 						</div>

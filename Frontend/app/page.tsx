@@ -51,6 +51,7 @@ function HomeContent() {
   const [hideInputPanel, setHideInputPanel] = useState(false)
   const [steps, setSteps] = useState<ProgressStep[]>(INITIAL_STEPS)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
   const searchParams = useSearchParams()
 
   const updateStep = useCallback(
@@ -75,6 +76,7 @@ function HomeContent() {
     setIsLoading(true)
     setResults(null)
     setErrorMsg(null)
+    setJobId(null)
     setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending", detail: undefined })))
     updateStep("upload", "active", "Uploading to ImageBB...")
 
@@ -117,6 +119,7 @@ function HomeContent() {
             } else if (event === "progress") {
               const uiStep = STEP_MAP[payload.step as string] || (payload.step as string)
               const msg = payload.message as string
+              if (payload.job_id && !jobId) setJobId(payload.job_id as string)
               if (payload.done) {
                 updateStep(uiStep, "done", msg)
                 setSteps((prev) => {
@@ -135,9 +138,10 @@ function HomeContent() {
               }
             } else if (event === "complete") {
               const resultData = payload.data as Record<string, unknown>
+              if (payload.job_id) setJobId(payload.job_id as string)
               setSteps((prev) => prev.map((s) => ({ ...s, status: "done" as const })))
               if (resultData) {
-                setResults({ data: resultData } as never)
+                setResults({ data: resultData, job_id: payload.job_id } as never)
               }
             } else if (event === "error") {
               setErrorMsg(payload.message as string)
@@ -184,6 +188,9 @@ function HomeContent() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">{doneCount}/{steps.length} steps</p>
+                {jobId && (
+                  <p className="text-[10px] text-muted-foreground/60 font-mono">Job: {jobId}</p>
+                )}
               </div>
 
               {/* Step list */}

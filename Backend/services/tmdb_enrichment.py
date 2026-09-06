@@ -17,6 +17,9 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, will use environment variables directly
 
+from logging_config import get_logger
+logger = get_logger("tmdb")
+
 
 class TMDBEnricher:
     """Enriches actor data with TMDB filmography."""
@@ -43,10 +46,8 @@ class TMDBEnricher:
         from urllib.parse import quote
         
         url = f"{self.base_url}/search/person"
-        # URL encode the name, replacing spaces and + with %20
-        # encoded_name = name.replace(' ', '%20').replace('+', '%20')
         encoded_name = name
-        print(encoded_name)
+        logger.debug("searching tmdb", extra={"actor": name, "step": "search_person"})
         params = {
             'api_key': self.api_key,
             'query': encoded_name,
@@ -63,7 +64,7 @@ class TMDBEnricher:
                 return data['results'][0]
             return None
         except Exception as e:
-            print(f"  ⚠️  Error searching for {name}: {e}")
+            logger.warning("tmdb person search failed", extra={"actor": name, "error": str(e), "step": "search_person"})
             return None
     
     def get_person_details(self, person_id: int) -> Optional[Dict]:
@@ -79,7 +80,7 @@ class TMDBEnricher:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"  ⚠️  Error getting person details: {e}")
+            logger.warning("tmdb person details failed", extra={"error": str(e), "step": "get_person_details"})
             return None
     
     def get_person_credits(self, person_id: int, limit: int = 10) -> Dict:
@@ -123,7 +124,7 @@ class TMDBEnricher:
                 'recent_credits': credits
             }
         except Exception as e:
-            print(f"  ⚠️  Error getting credits: {e}")
+            logger.warning("tmdb credits fetch failed", extra={"error": str(e), "step": "get_person_credits"})
             return {'total_credits': 0, 'recent_credits': []}
     
     def enrich_person(self, person_data: Dict, max_credits: int = 10) -> Dict:
@@ -131,20 +132,20 @@ class TMDBEnricher:
         name = person_data.get('name')
         
         if not name:
-            print("  ⚠️  No name found, skipping TMDB enrichment")
+            logger.warning("no name found, skipping tmdb enrichment", extra={"step": "enrich_person"})
             return person_data
         
-        print(f"  🔍 Searching TMDB for: {name}")
+        logger.info("searching tmdb", extra={"actor": name, "step": "enrich_person"})
         
         # Search for person
         search_result = self.search_person(name)
         if not search_result:
-            print(f"  ❌ Not found on TMDB: {name}")
+            logger.warning("not found on tmdb", extra={"actor": name, "step": "enrich_person"})
             person_data['tmdb_data'] = None
             return person_data
         
         person_id = search_result['id']
-        print(f"  ✓ Found: {search_result['name']} (ID: {person_id})")
+        logger.info("found on tmdb", extra={"actor": search_result['name'], "detail": f"ID: {person_id}", "step": "enrich_person"})
         
         # Get detailed info
         details = self.get_person_details(person_id)
@@ -165,7 +166,7 @@ class TMDBEnricher:
         }
         
         person_data['tmdb_data'] = tmdb_data
-        print(f"  ✓ Added {len(credits['recent_credits'])} recent credits")
+        logger.info("enrichment done", extra={"actor": name, "count": len(credits['recent_credits']), "step": "enrich_person"})
         
         return person_data
     
@@ -182,28 +183,25 @@ class TMDBEnricher:
         Returns:
             Enriched analysis data
         """
-        print(f"\n{'='*70}")
-        print(f"🎬 TMDB ENRICHMENT")
-        print(f"{'='*70}\n")
+        logger.info("tmdb enrichment started", extra={"step": "enrich_analysis", "detail": analysis_file})
         
         # Load analysis
         with open(analysis_file, 'r') as f:
             analysis = json.load(f)
         
-        print(f"📄 Loaded: {analysis_file}")
+        logger.info("analysis loaded", extra={"step": "enrich_analysis", "detail": analysis_file})
         
         # Enrich people
         people = analysis.get('people', [])
         if not people:
-            print("\n⚠️  No people found in analysis")
+            logger.warning("no people found in analysis", extra={"step": "enrich_analysis"})
             return analysis
         
-        print(f"\n👥 Enriching {len(people)} people with TMDB data...\n")
+        logger.info("enriching people with tmdb data", extra={"step": "enrich_analysis", "count": len(people)})
         
         for i, person in enumerate(people, 1):
-            print(f"[{i}/{len(people)}] {person.get('name', 'Unknown')}")
+            logger.info("processing person", extra={"step": "enrich_analysis", "actor": person.get('name', 'Unknown'), "detail": f"{i}/{len(people)}"})
             analysis['people'][i-1] = self.enrich_person(person, max_credits)
-            print()
         
         # Save enriched analysis
         if not output_file:
@@ -213,10 +211,7 @@ class TMDBEnricher:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
-        print(f"{'='*70}")
-        print(f"✅ ENRICHMENT COMPLETE!")
-        print(f"📄 Saved to: {output_file}")
-        print(f"{'='*70}\n")
+        logger.info("tmdb enrichment complete", extra={"step": "enrich_analysis", "detail": str(output_file)})
         
         return analysis
     
@@ -227,37 +222,34 @@ class TMDBEnricher:
         
         people = analysis.get('people', [])
         
-        print(f"\n{'='*70}")
-        print(f"🎬 ACTOR FILMOGRAPHY SUMMARY")
-        print(f"{'='*70}\n")
+        logger.info("actor filmography summary", extra={"step": "filmography_summary", "count": len(people)})
         
         for person in people:
             name = person.get('name', 'Unknown')
             tmdb_data = person.get('tmdb_data')
             
             if not tmdb_data:
-                print(f"❌ {name}: No TMDB data")
+                logger.warning("no tmdb data", extra={"actor": name, "step": "filmography_summary"})
                 continue
             
-            print(f"🎭 {tmdb_data['name']}")
-            print(f"   Known for: {tmdb_data.get('known_for_department', 'N/A')}")
-            print(f"   Total credits: {tmdb_data['total_credits']}")
+            logger.info("actor summary", extra={
+                "actor": tmdb_data['name'],
+                "step": "filmography_summary",
+                "detail": f"known_for={tmdb_data.get('known_for_department', 'N/A')}, total_credits={tmdb_data['total_credits']}, birthday={tmdb_data.get('birthday', 'N/A')}"
+            })
             
-            if tmdb_data.get('birthday'):
-                print(f"   Birthday: {tmdb_data['birthday']}")
-            
-            print(f"\n   Recent Movies/Shows:")
             for i, credit in enumerate(tmdb_data['recent_movies'][:5], 1):
                 title = credit['title']
                 year = credit['release_date'][:4] if credit.get('release_date') else 'TBA'
                 character = credit.get('character', 'N/A')
                 rating = credit.get('vote_average', 0)
                 
-                print(f"   {i}. {title} ({year})")
-                print(f"      Character: {character}")
-                print(f"      Rating: ⭐ {rating}/10")
-            
-            print()
+                logger.debug("credit", extra={
+                    "actor": tmdb_data['name'],
+                    "movie": f"{title} ({year})",
+                    "detail": f"character={character}, rating={rating}/10",
+                    "step": "filmography_summary"
+                })
 
 
 def main():
@@ -310,15 +302,13 @@ Get TMDB API key (free): https://www.themoviedb.org/settings/api
             enricher.get_actor_filmography_summary(output_file)
     
     except ValueError as e:
-        print(f"\n❌ Error: {e}\n")
-        print("Get free TMDB API key at: https://www.themoviedb.org/settings/api")
-        print("Then set it: export TMDB_API_KEY=your_key_here")
+        logger.error("configuration error", extra={"error": str(e), "step": "main"})
         exit(1)
     except FileNotFoundError:
-        print(f"\n❌ Error: File not found: {args.analysis_file}\n")
+        logger.error("file not found", extra={"error": args.analysis_file, "step": "main"})
         exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
+        logger.error("unexpected error", extra={"error": str(e), "step": "main"})
         exit(1)
 
 

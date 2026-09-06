@@ -15,6 +15,9 @@ import time
 import random
 from urllib.parse import quote
 
+from logging_config import get_logger
+logger = get_logger("amazon")
+
 
 class AmazonShopper:
     """Scrapes Amazon for products based on image analysis."""
@@ -254,11 +257,11 @@ class AmazonShopper:
         if not query:
             return []
         
-        print(f"  🔍 Searching: {query}")
+        logger.info("searching", extra={"step": "search_amazon", "detail": query})
         
         serpapi_key = os.getenv('SERPAPI_KEY')
         if not serpapi_key:
-            print(f"  ⚠️  SERPAPI_KEY not set, skipping search")
+            logger.warning("SERPAPI_KEY not set, skipping search", extra={"step": "search_amazon"})
             return []
         
         try:
@@ -286,11 +289,11 @@ class AmazonShopper:
                     'source': item.get('source', 'Google Shopping'),
                 })
             
-            print(f"  ✓ Found {len(products)} products")
+            logger.info("search complete", extra={"step": "search_amazon", "count": len(products), "detail": query})
             return products
         
         except Exception as e:
-            print(f"  ⚠️  Error searching: {e}")
+            logger.warning("search failed", extra={"step": "search_amazon", "error": str(e), "detail": query})
             return []
     
     def _parse_product(self, item) -> Optional[Dict]:
@@ -494,36 +497,34 @@ class AmazonShopper:
         Returns:
             Shopping-enriched analysis
         """
-        print(f"\n{'='*70}")
-        print(f"🛒 AMAZON SHOPPING INTEGRATION")
-        print(f"{'='*70}\n")
+        logger.info("amazon shopping started", extra={"step": "enrich_with_shopping", "detail": analysis_file})
         
         # Load analysis
         with open(analysis_file, 'r') as f:
             analysis = json.load(f)
         
-        print(f"📄 Loaded: {analysis_file}")
+        logger.info("analysis loaded", extra={"step": "enrich_with_shopping", "detail": analysis_file})
         
         # Extract searchable items
         searchable_items = self.extract_searchable_items(analysis)
         
         if not searchable_items:
-            print("\n⚠️  No searchable items found in analysis")
+            logger.warning("no searchable items found in analysis", extra={"step": "enrich_with_shopping"})
             return analysis
         
-        print(f"\n🔍 Found {len(searchable_items)} searchable items\n")
+        logger.info("searchable items found", extra={"step": "enrich_with_shopping", "count": len(searchable_items)})
         
         # Search Amazon for each item
         shopping_results = []
         
         for i, item in enumerate(searchable_items, 1):
-            print(f"[{i}/{len(searchable_items)}] {item['category']}: {item['type']}")
+            logger.info("processing item", extra={"step": "enrich_with_shopping", "detail": f"{item['category']}: {item['type']} ({i}/{len(searchable_items)})"})
             
             # Build search query
             query = self.build_search_query(item['data'], item['category'])
             
             if not query:
-                print(f"  ⚠️  Could not build query, skipping")
+                logger.warning("could not build query, skipping", extra={"step": "enrich_with_shopping", "detail": item['type']})
                 continue
             
             # Search Amazon
@@ -536,8 +537,6 @@ class AmazonShopper:
                     'search_query': query,
                     'products': products
                 })
-            
-            print()
         
         # Add shopping results to analysis
         analysis['shopping_recommendations'] = shopping_results
@@ -556,12 +555,12 @@ class AmazonShopper:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
-        print(f"{'='*70}")
-        print(f"✅ SHOPPING INTEGRATION COMPLETE!")
-        print(f"📊 Searched: {len(searchable_items)} items")
-        print(f"📦 Found: {sum(len(r['products']) for r in shopping_results)} products")
-        print(f"📄 Saved to: {output_file}")
-        print(f"{'='*70}\n")
+        total_products = sum(len(r['products']) for r in shopping_results)
+        logger.info("amazon shopping complete", extra={
+            "step": "enrich_with_shopping",
+            "count": total_products,
+            "detail": f"searched={len(searchable_items)}, found={total_products}, saved={output_file}"
+        })
         
         return analysis
     
@@ -573,31 +572,22 @@ class AmazonShopper:
         shopping = analysis.get('shopping_recommendations', [])
         
         if not shopping:
-            print("No shopping recommendations found")
+            logger.info("no shopping recommendations found", extra={"step": "shopping_summary"})
             return
         
-        print(f"\n{'='*70}")
-        print(f"🛒 SHOPPING RECOMMENDATIONS SUMMARY")
-        print(f"{'='*70}\n")
+        logger.info("shopping recommendations summary", extra={"step": "shopping_summary", "count": len(shopping)})
         
         for item in shopping:
-            print(f"📦 {item['category'].upper()}: {item['type']}")
-            print(f"   Search: {item['search_query']}")
-            print(f"   Found {len(item['products'])} products:\n")
+            logger.info("recommendation", extra={
+                "step": "shopping_summary",
+                "detail": f"{item['category'].upper()}: {item['type']}, query={item['search_query']}, products={len(item['products'])}"
+            })
             
             for i, product in enumerate(item['products'][:3], 1):
-                print(f"   {i}. {product['title'][:60]}...")
-                if product.get('price'):
-                    print(f"      Price: ${product['price']}")
-                if product.get('rating'):
-                    print(f"      Rating: {product['rating']}")
-                if product.get('url'):
-                    print(f"      URL: {product['url'][:50]}...")
-                print()
-            
-            if len(item['products']) > 3:
-                print(f"   ... and {len(item['products']) - 3} more\n")
-            print()
+                logger.debug("product", extra={
+                    "step": "shopping_summary",
+                    "detail": f"{product['title'][:60]}, price={product.get('price', 'N/A')}, rating={product.get('rating', 'N/A')}"
+                })
 
 
 def main():
@@ -659,12 +649,10 @@ Note: Web scraping may be against Amazon's TOS. Use responsibly and consider off
             shopper.print_shopping_summary(output_file)
     
     except FileNotFoundError:
-        print(f"\n❌ Error: File not found: {args.analysis_file}\n")
+        logger.error("file not found", extra={"error": args.analysis_file, "step": "main"})
         exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
-        import traceback
-        traceback.print_exc()
+        logger.error("unexpected error", extra={"error": str(e), "step": "main"})
         exit(1)
 
 

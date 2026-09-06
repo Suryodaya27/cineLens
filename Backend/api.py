@@ -30,6 +30,7 @@ import uvicorn
 from pipelines.updated_agentic_pipeline import UpdatedAgenticPipeline
 from services.tmdb_enrichment import TMDBEnricher
 from services.unified_shopping import UnifiedShopper
+from logging_config import get_logger
 
 try:
     from dotenv import load_dotenv
@@ -37,11 +38,12 @@ try:
 except ImportError:
     pass
 
+logger = get_logger("api")
 
 # Configuration
 IMGBB_API_KEY = os.getenv('IMGBB_API_KEY')
 if not IMGBB_API_KEY:
-    print("⚠️  Warning: IMGBB_API_KEY not set. Image uploads will fail.")
+    logger.warning("IMGBB_API_KEY not set — image uploads will fail")
 
 # Vision model configuration
 DEFAULT_VISION_MODEL = os.getenv('VISION_MODEL', 'qwen3.8:latest')
@@ -160,7 +162,7 @@ class ImgBBUploader:
     def upload_image(self, image_path: str) -> Optional[str]:
         """Upload image and return hosted URL."""
         if not self.api_key:
-            print(f"⚠️  Cannot upload {Path(image_path).name}: No ImgBB API key")
+            logger.warning("Cannot upload, no ImgBB API key", extra={"detail": Path(image_path).name})
             return None
         
         try:
@@ -174,14 +176,14 @@ class ImgBBUploader:
                 result = response.json()
                 if result.get('success'):
                     url = result['data']['url']
-                    print(f"  ✓ Uploaded: {Path(image_path).name} -> {url}")
+                    logger.debug("Uploaded to ImgBB", extra={"detail": f"{Path(image_path).name} -> {url}"})
                     return url
                 else:
-                    print(f"  ❌ Upload failed: {result.get('error', {}).get('message', 'Unknown error')}")
+                    logger.error("ImgBB upload failed", extra={"error": result.get('error', {}).get('message', 'Unknown')})
                     return None
         
         except Exception as e:
-            print(f"  ❌ Upload error for {Path(image_path).name}: {e}")
+            logger.error("ImgBB upload error", extra={"error": str(e), "detail": Path(image_path).name})
             return None
 
 
@@ -198,11 +200,11 @@ def download_image(url: str, save_path: Path) -> bool:
                 if chunk:
                     f.write(chunk)
         
-        print(f"✓ Downloaded image: {save_path.name}")
+        logger.info("Image downloaded", extra={"detail": save_path.name})
         return True
     
     except Exception as e:
-        print(f"❌ Download failed: {e}")
+        logger.error("Image download failed", extra={"error": str(e)})
         return False
 
 
@@ -242,9 +244,9 @@ def cleanup_temp_files(temp_dir: Path):
     try:
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
-            print(f"✓ Cleaned up temp directory: {temp_dir}")
+            logger.debug("Cleaned up temp dir", extra={"detail": str(temp_dir)})
     except Exception as e:
-        print(f"⚠️  Cleanup warning: {e}")
+        logger.warning("Cleanup warning", extra={"error": str(e)})
 
 
 # API endpoints
@@ -301,14 +303,7 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
     temp_output_dir.mkdir(parents=True, exist_ok=True)
     
     try:
-        print(f"\n{'='*70}")
-        print(f"🚀 API REQUEST: {request_id}")
-        print(f"{'='*70}")
-        print(f"Image URL: {request.image_url}")
-        print(f"Movie: {request.movie_name}")
-        print(f"Vision Analysis: {'Enabled' if request.enable_vision else 'Disabled'}")
-        print(f"Similarity Threshold: {request.similarity_threshold}")
-        print(f"{'='*70}\n")
+        logger.info("Analyze request", extra={"request_id": request_id, "image_url": str(request.image_url), "movie": request.movie_name})
         
         # Download image
         image_filename = f"input_image_{request_id}.jpg"
@@ -321,10 +316,8 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
             )
         
         # Initialize pipeline
-        print("\n🔧 Initializing pipeline...")
+        logger.info("Initializing pipeline", extra={"request_id": request_id})
         vision_model = request.vision_model or DEFAULT_VISION_MODEL
-        if request.enable_vision:
-            print(f"   Vision Model: {vision_model}")
         
         pipeline = UpdatedAgenticPipeline(
             yolo_model="yolov8n.pt",
@@ -333,7 +326,7 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
         )
         
         # Process image
-        print("\n🎬 Processing image...")
+        logger.info("Processing image", extra={"request_id": request_id})
         result = pipeline.process_image(
             image_path=str(image_path),
             movie_title=request.movie_name,
@@ -350,14 +343,12 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
             )
         
         # Upload cropped images to ImgBB
-        print("\n📤 Uploading cropped images to ImgBB...")
+        logger.info("Uploading crops", extra={"request_id": request_id})
         if IMGBB_API_KEY:
             uploader = ImgBBUploader(IMGBB_API_KEY)
             result = upload_cropped_images(result, uploader)
-            print("✓ All crops uploaded")
         else:
-            print("⚠️  Skipping uploads: No ImgBB API key configured")
-            # Add warning to result
+            logger.warning("Skipping uploads — no ImgBB API key", extra={"request_id": request_id})
             result['warning'] = "Cropped images not uploaded: ImgBB API key not configured"
         
         # Calculate processing time
@@ -366,8 +357,7 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
         # Schedule cleanup in background
         background_tasks.add_task(cleanup_temp_files, temp_request_dir)
         
-        print(f"\n✅ Request completed in {processing_time:.2f}s")
-        print(f"{'='*70}\n")
+        logger.info("Request completed", extra={"request_id": request_id, "duration": f"{processing_time:.2f}s"})
         
         return AnalyzeResponse(
             success=True,
@@ -385,9 +375,7 @@ async def analyze_image(request: AnalyzeRequest, background_tasks: BackgroundTas
         # Clean up on error
         cleanup_temp_files(temp_request_dir)
         
-        print(f"\n❌ Error processing request: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Request failed", extra={"request_id": request_id, "error": str(e)})
         
         raise HTTPException(
             status_code=500,
@@ -523,19 +511,12 @@ async def get_actor_movies(request: ActorMoviesRequest):
     4. Includes poster images and details
     """
     try:
-        print(f"\n{'='*70}")
-        print(f"🎬 ACTOR MOVIES REQUEST")
-        print(f"{'='*70}")
-        print(f"Actor: {request.actor_name}")
-        print(f"Limit: {request.limit}")
-        print(f"Sort by: {request.sort_by}")
-        print(f"{'='*70}\n")
+        logger.info("Actor movies request", extra={"actor": request.actor_name, "detail": f"limit={request.limit} sort={request.sort_by}"})
         
         # Initialize TMDB enricher
         enricher = TMDBEnricher()
         
         # Search for actor
-        print(f"🔍 Searching TMDB for: {request.actor_name}")
         search_result = enricher.search_person(request.actor_name)
         
         if not search_result:
@@ -545,29 +526,23 @@ async def get_actor_movies(request: ActorMoviesRequest):
             )
         
         person_id = search_result['id']
-        print(f"✓ Found: {search_result['name']} (ID: {person_id})")
+        logger.info("Actor found", extra={"actor": search_result['name'], "detail": f"TMDB ID {person_id}"})
         
         # Get person details
         details = enricher.get_person_details(person_id)
         
         # Get credits
-        print(f"📽️  Fetching filmography...")
         credits_data = enricher.get_person_credits(person_id, limit=50)  # Get more to sort
         
         # Sort movies
         movies = credits_data['recent_credits']
         
         if request.sort_by == "rating":
-            # Sort by vote_average (highest first)
             movies = sorted(
                 movies,
                 key=lambda x: x.get('vote_average', 0),
                 reverse=True
             )
-            print(f"✓ Sorted by rating (highest first)")
-        else:
-            # Already sorted by recent (from get_person_credits)
-            print(f"✓ Sorted by release date (most recent first)")
         
         # Limit results
         movies = movies[:request.limit]
@@ -586,8 +561,7 @@ async def get_actor_movies(request: ActorMoviesRequest):
             'movies': movies
         }
         
-        print(f"\n✅ Found {len(movies)} movies")
-        print(f"{'='*70}\n")
+        logger.info("Actor movies response", extra={"actor": search_result['name'], "count": len(movies)})
         
         return ActorMoviesResponse(
             success=True,
@@ -599,9 +573,7 @@ async def get_actor_movies(request: ActorMoviesRequest):
         raise
     
     except Exception as e:
-        print(f"\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Actor movies failed", extra={"error": str(e)})
         
         raise HTTPException(
             status_code=500,
@@ -626,131 +598,34 @@ async def get_shopping_recommendations(request: ShoppingRequest, background_task
     temp_request_dir = TEMP_DIR / f"shopping_{request_id}"
     temp_request_dir.mkdir(parents=True, exist_ok=True)
     
-    # PRINT RECEIVED DATA FOR DEBUGGING
-    print(f"\n{'='*80}")
-    print(f"🛍️  SHOPPING API - RECEIVED DATA")
-    print(f"{'='*80}")
-    print(f"Request ID: {request_id}")
-    print(f"Max products per item: {request.max_products_per_item}")
-    print(f"Max visual results: {request.max_visual_results}")
-    print(f"Amazon region: {request.amazon_region}")
-    print()
-    
     # Handle both formats: direct analysis data or full API response
     raw_data = request.analysis_data
-    print(f"RAW DATA STRUCTURE:")
-    print(f"- Keys: {list(raw_data.keys())}")
-    
-    # Check if this is a full API response (has 'success', 'message', 'analysis_data')
+
     if 'success' in raw_data and 'analysis_data' in raw_data:
-        print(f"⚠️  Detected full API response format. Extracting analysis_data...")
         analysis_data = raw_data['analysis_data']
-        print(f"✓ Extracted analysis data with keys: {list(analysis_data.keys())}")
     else:
-        print(f"✓ Direct analysis data format detected")
         analysis_data = raw_data
-    
-    print(f"\nFINAL ANALYSIS DATA STRUCTURE:")
-    print(f"- Keys: {list(analysis_data.keys())}")
-    
-    # Print people data in detail
-    people = analysis_data.get('people', [])
-    print(f"\nPEOPLE DATA ({len(people)} people):")
-    for i, person in enumerate(people, 1):
-        print(f"  [{i}] {person.get('name', 'Unknown')} ({person.get('gender', 'Unknown')})")
-        
-        clothing = person.get('clothing', {})
-        if isinstance(clothing, str):
-            print(f"      Clothing: {clothing}")
-        else:
-            print(f"      Clothing description: {clothing.get('description', 'N/A')}")
-            print(f"      Colors: {clothing.get('colors', [])}")
-            print(f"      Style: {clothing.get('style', 'N/A')}")
-            print(f"      Accessories: {clothing.get('accessories', [])}")
-        
-        held_items = person.get('held_items', [])
-        if held_items:
-            print(f"      Held items:")
-            for item in held_items:
-                print(f"        - {item.get('item', 'N/A')}: {item.get('description', 'N/A')}")
-        
-        print(f"      Crop image: {person.get('crop_image', 'N/A')}")
-        print()
-    
-    # Print products data
-    products = analysis_data.get('products', [])
-    print(f"PRODUCTS DATA ({len(products)} products):")
-    for i, product in enumerate(products, 1):
-        print(f"  [{i}] Brand: {product.get('brand', 'N/A')}")
-        print(f"      Type: {product.get('product_type', 'N/A')}")
-        print(f"      Color: {product.get('color', 'N/A')}")
-        print(f"      Material: {product.get('material', 'N/A')}")
-        print(f"      Crop image: {product.get('crop_image', 'N/A')}")
-        print()
-    
-    # Print electronics data
-    electronics = analysis_data.get('electronics', [])
-    print(f"ELECTRONICS DATA ({len(electronics)} electronics):")
-    for i, electronic in enumerate(electronics, 1):
-        print(f"  [{i}] Brand: {electronic.get('brand', 'N/A')}")
-        print(f"      Model: {electronic.get('model', 'N/A')}")
-        print(f"      Type: {electronic.get('type', 'N/A')}")
-        print(f"      Color: {electronic.get('color', 'N/A')}")
-        print(f"      Crop image: {electronic.get('crop_image', 'N/A')}")
-        print()
-    
-    # Print furniture data
-    furniture = analysis_data.get('furniture', [])
-    print(f"FURNITURE DATA ({len(furniture)} furniture):")
-    for i, item in enumerate(furniture, 1):
-        print(f"  [{i}] Type: {item.get('type', 'N/A')}")
-        print(f"      Material: {item.get('material', 'N/A')}")
-        print(f"      Style: {item.get('style', 'N/A')}")
-        print(f"      Color: {item.get('color', 'N/A')}")
-        print(f"      Crop image: {item.get('crop_image', 'N/A')}")
-        print()
-    
-    # Print other objects data
-    other_objects = analysis_data.get('other_objects', [])
-    print(f"OTHER OBJECTS DATA ({len(other_objects)} objects):")
-    for i, obj in enumerate(other_objects, 1):
-        print(f"  [{i}] Type: {obj.get('type', 'N/A')}")
-        print(f"      Brand: {obj.get('brand', 'N/A')}")
-        print(f"      Material: {obj.get('material', 'N/A')}")
-        print(f"      Color: {obj.get('color', 'N/A')}")
-        print(f"      Crop image: {obj.get('crop_image', 'N/A')}")
-        print()
-    
-    print(f"{'='*80}")
-    print(f"END OF RECEIVED DATA")
-    print(f"{'='*80}\n")
-    
+
+    logger.info("Shopping request", extra={
+        "request_id": request_id,
+        "detail": f"region={request.amazon_region} people={len(analysis_data.get('people', []))} products={len(analysis_data.get('products', []))}"
+    })
+    logger.debug("Shopping input data keys: %s", list(analysis_data.keys()))
+
     try:
-        print(f"\n{'='*70}")
-        print(f"🛍️  SHOPPING RECOMMENDATIONS REQUEST")
-        print(f"{'='*70}")
-        print(f"Request ID: {request_id}")
-        print(f"Amazon Region: {request.amazon_region}")
-        print(f"Max products per item: {request.max_products_per_item}")
-        print(f"Max visual results: {request.max_visual_results}")
-        print(f"{'='*70}\n")
-        
         # Save analysis data to temp file
         analysis_file = temp_request_dir / "analysis.json"
         with open(analysis_file, 'w', encoding='utf-8') as f:
             json.dump(analysis_data, f, indent=2, ensure_ascii=False)
         
-        print(f"✓ Analysis data saved to temp file")
-        
         # Initialize unified shopper
-        print(f"\n🔧 Initializing shopping pipeline...")
         shopper = UnifiedShopper(
             amazon_region=request.amazon_region,
             visual_provider="serpapi"
         )
         
         # Get shopping recommendations
-        print(f"\n🛍️  Finding shopping recommendations...")
+        logger.info("Finding shopping recommendations", extra={"request_id": request_id})
         output_file = temp_request_dir / "shopping_results.json"
         
         enriched_analysis = shopper.enrich_with_unified_shopping(
@@ -779,10 +654,11 @@ async def get_shopping_recommendations(request: ShoppingRequest, background_task
         # Schedule cleanup in background
         background_tasks.add_task(cleanup_temp_files, temp_request_dir)
         
-        print(f"\n✅ Shopping recommendations complete")
-        print(f"   Total searches: {metadata.get('total_searches', 0)}")
-        print(f"   Products found: {metadata.get('total_products_found', 0)}")
-        print(f"{'='*70}\n")
+        logger.info("Shopping complete", extra={
+            "request_id": request_id,
+            "count": metadata.get('total_products_found', 0),
+            "detail": f"{metadata.get('total_searches', 0)} searches"
+        })
         
         return ShoppingResponse(
             success=True,
@@ -794,9 +670,7 @@ async def get_shopping_recommendations(request: ShoppingRequest, background_task
         # Clean up on error
         cleanup_temp_files(temp_request_dir)
         
-        print(f"\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Shopping request failed", extra={"request_id": request_id, "error": str(e)})
         
         raise HTTPException(
             status_code=500,
@@ -806,32 +680,7 @@ async def get_shopping_recommendations(request: ShoppingRequest, background_task
 
 # Run server
 if __name__ == "__main__":
-    print("""
-╔══════════════════════════════════════════════════════════════════════╗
-║                    AGENTIC PIPELINE API SERVER                       ║
-╚══════════════════════════════════════════════════════════════════════╝
-
-Starting server...
-
-Configuration:
-  • TMDB API Key: {'✓ Configured' if os.getenv('TMDB_API_KEY') else '✗ Not configured'}
-  • ImgBB API Key: {'✓ Configured' if IMGBB_API_KEY else '✗ Not configured'}
-  • PostgreSQL: Check /health endpoint
-
-API Documentation: http://localhost:8000/docs
-Health Check: http://localhost:8000/health
-
-Example Request:
-  curl -X POST "http://localhost:8000/analyze" \\
-    -H "Content-Type: application/json" \\
-    -d '{
-      "image_url": "https://example.com/image.jpg",
-      "movie_name": "Pathaan",
-      "enable_vision": 0,
-      "similarity_threshold": 0.6
-    }'
-
-""")
+    logger.info("Starting API server", extra={"port": 8000})
     
     uvicorn.run(
         "api:app",

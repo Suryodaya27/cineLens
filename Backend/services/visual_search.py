@@ -15,6 +15,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from logging_config import get_logger
+logger = get_logger("visual_search")
+
 
 class VisualSearcher:
     """Visual search using cropped images."""
@@ -45,9 +48,7 @@ class VisualSearcher:
             # ImgBB API key for image hosting
             self.imgbb_key = os.getenv('IMGBB_API_KEY')
             if not self.imgbb_key:
-                print("  ⚠️  Warning: IMGBB_API_KEY not set in .env")
-                print("     Get free key at: https://api.imgbb.com/")
-                print("     Visual search may not work without it")
+                logger.warning("IMGBB_API_KEY not set, visual search may not work without it", extra={"step": "init"})
         elif self.provider == "google-lens":
             # Google Lens API (if available)
             self.api_key = os.getenv('GOOGLE_API_KEY')
@@ -86,7 +87,7 @@ class VisualSearcher:
             Public URL or None if failed
         """
         if not self.imgbb_key:
-            print(f"  ⚠️  ImgBB API key not configured")
+            logger.warning("imgbb api key not configured", extra={"step": "upload_imgbb"})
             return None
         
         try:
@@ -111,38 +112,39 @@ class VisualSearcher:
                 result = response.json()
                 if result.get('success'):
                     image_url = result['data']['url']
-                    print(f"  ✓ Uploaded to ImgBB: {image_url[:50]}...")
+                    logger.info("uploaded to imgbb", extra={"step": "upload_imgbb", "detail": image_url[:50]})
                     return image_url
             
-            print(f"  ⚠️  ImgBB upload failed: {response.text[:100]}")
+            logger.warning("imgbb upload failed", extra={"step": "upload_imgbb", "error": response.text[:100]})
             return None
             
         except Exception as e:
-            print(f"  ⚠️  Error uploading to ImgBB: {e}")
+            logger.warning("imgbb upload error", extra={"step": "upload_imgbb", "error": str(e)})
             return None
     
     def _search_serpapi(self, image_path: str, max_results: int) -> List[Dict]:
         """Search using SerpAPI Google Lens."""
-        print(f"  🔍 Visual search: {Path(image_path).name if not image_path.startswith('http') else image_path[:50]+'...'}")
+        image_label = Path(image_path).name if not image_path.startswith('http') else image_path[:50] + '...'
+        logger.info("visual search started", extra={"step": "search_serpapi", "detail": image_label})
         
         try:
             import requests
             
             # Check if image_path is already a URL
             if image_path.startswith('http://') or image_path.startswith('https://'):
-                print(f"  ✓ Using provided URL (already hosted)")
+                logger.info("using provided url", extra={"step": "search_serpapi"})
                 image_url = image_path
             else:
                 # Step 1: Upload local image to ImgBB to get public URL
-                print(f"  📤 Uploading image to ImgBB...")
+                logger.info("uploading image to imgbb", extra={"step": "search_serpapi"})
                 image_url = self._upload_to_imgbb(image_path)
                 
                 if not image_url:
-                    print(f"  ⚠️  Cannot proceed without public image URL")
+                    logger.warning("cannot proceed without public image url", extra={"step": "search_serpapi"})
                     return []
             
             # Step 2: Use public URL with SerpAPI Google Lens
-            print(f"  🔍 Searching with Google Lens via SerpAPI...")
+            logger.info("searching with google lens via serpapi", extra={"step": "search_serpapi"})
             
             params = {
                 'engine': 'google_lens',
@@ -153,12 +155,12 @@ class VisualSearcher:
             # Add location/country parameters if specified
             if self.location:
                 params['location'] = self.location
-                print(f"  📍 Location: {self.location}")
+                logger.debug("location set", extra={"step": "search_serpapi", "detail": self.location})
             
             if self.country:
                 params['gl'] = self.country  # Google country code
                 params['hl'] = self.country  # Language code
-                print(f"  🌍 Country: {self.country}")
+                logger.debug("country set", extra={"step": "search_serpapi", "detail": self.country})
             
             response = requests.get('https://serpapi.com/search.json', 
                                    params=params, 
@@ -166,20 +168,18 @@ class VisualSearcher:
             
             # Check response
             if response.status_code != 200:
-                print(f"  ⚠️  API Error: Status {response.status_code}")
-                print(f"     Response: {response.text[:300]}")
+                logger.warning("serpapi error", extra={"step": "search_serpapi", "error": f"status {response.status_code}: {response.text[:300]}"})
                 return []
             
             try:
                 results = response.json()
-            except:
-                print(f"  ⚠️  Invalid JSON response")
-                print(f"     Response: {response.text[:300]}")
+            except Exception:
+                logger.warning("invalid json response from serpapi", extra={"step": "search_serpapi", "error": response.text[:300]})
                 return []
             
             # Debug: Check if there's an error
             if 'error' in results:
-                print(f"  ⚠️  SerpAPI Error: {results['error']}")
+                logger.warning("serpapi returned error", extra={"step": "search_serpapi", "error": results['error']})
                 return []
             
             # Parse results
@@ -188,10 +188,8 @@ class VisualSearcher:
             # Visual matches
             visual_matches = results.get('visual_matches', [])
             if not visual_matches:
-                print(f"  ℹ️  No visual matches found")
-                # Debug: show what keys are available
                 available_keys = list(results.keys())
-                print(f"     Available keys: {available_keys[:10]}")
+                logger.info("no visual matches found", extra={"step": "search_serpapi", "detail": f"available_keys={available_keys[:10]}"})
             
             for match in visual_matches[:max_results]:
                 product = {
@@ -206,13 +204,12 @@ class VisualSearcher:
                 products.append(product)
             
             if products:
-                print(f"  ✓ Found {len(products)} visually similar products")
+                logger.info("visual matches found", extra={"step": "search_serpapi", "count": len(products)})
             return products
         
         except Exception as e:
-            print(f"  ⚠️  Error in visual search: {e}")
             import traceback
-            print(f"     Debug: {traceback.format_exc()}")
+            logger.error("visual search error", extra={"step": "search_serpapi", "error": str(e), "detail": traceback.format_exc()})
             return []
     
     def _upload_image_to_url(self, image_path: str) -> str:
@@ -238,13 +235,12 @@ class VisualSearcher:
     
     def _search_google_lens(self, image_path: str, max_results: int) -> List[Dict]:
         """Search using Google Lens API (if available)."""
-        print(f"  ⚠️  Google Lens API not yet implemented")
-        print(f"     Use SerpAPI instead (--provider serpapi)")
+        logger.warning("google lens api not implemented, use serpapi instead", extra={"step": "search_google_lens"})
         return []
     
     def _search_bing(self, image_path: str, max_results: int) -> List[Dict]:
         """Search using Bing Visual Search API."""
-        print(f"  🔍 Bing visual search: {Path(image_path).name}")
+        logger.info("bing visual search started", extra={"step": "search_bing", "detail": Path(image_path).name})
         
         try:
             url = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
@@ -277,11 +273,11 @@ class VisualSearcher:
                             }
                             products.append(product)
             
-            print(f"  ✓ Found {len(products)} visually similar products")
+            logger.info("bing visual search complete", extra={"step": "search_bing", "count": len(products)})
             return products
         
         except Exception as e:
-            print(f"  ⚠️  Error in Bing visual search: {e}")
+            logger.warning("bing visual search failed", extra={"step": "search_bing", "error": str(e)})
             return []
     
     def enrich_with_visual_search(self, analysis_file: str, output_file: str = None,
@@ -297,17 +293,13 @@ class VisualSearcher:
         Returns:
             Enriched analysis
         """
-        print(f"\n{'='*70}")
-        print(f"👁️  VISUAL SEARCH INTEGRATION")
-        print(f"{'='*70}\n")
+        logger.info("visual search integration started", extra={"step": "enrich", "detail": analysis_file})
         
         # Load analysis
         with open(analysis_file, 'r') as f:
             analysis = json.load(f)
         
-        print(f"📄 Loaded: {analysis_file}")
-        print(f"ℹ️  Note: Skipping people crops (would find actor faces, not clothes)")
-        print(f"   Searching: products, electronics, furniture, other objects\n")
+        logger.info("analysis loaded, skipping people crops (would match faces not clothes)", extra={"step": "enrich", "detail": analysis_file})
         
         # Collect all crop images (following output_schema.json structure)
         crops_to_search = []
@@ -422,16 +414,16 @@ class VisualSearcher:
                 })
         
         if not crops_to_search:
-            print("\n⚠️  No crop images found")
+            logger.warning("no crop images found", extra={"step": "enrich"})
             return analysis
         
-        print(f"\n🔍 Found {len(crops_to_search)} crops to search\n")
+        logger.info("crops found for visual search", extra={"step": "enrich", "count": len(crops_to_search)})
         
         # Visual search for each crop
         visual_results = []
         
         for i, crop in enumerate(crops_to_search, 1):
-            print(f"[{i}/{len(crops_to_search)}] {crop['category']}: {crop['description']}")
+            logger.info("processing crop", extra={"step": "enrich", "detail": f"{crop['category']}: {crop['description']} ({i}/{len(crops_to_search)})"})
             
             # Search by image
             products = self.search_by_image(crop['path'], max_results_per_item)
@@ -443,8 +435,6 @@ class VisualSearcher:
                     'crop_image': crop['path'],
                     'visual_matches': products
                 })
-            
-            print()
         
         # Add to analysis
         analysis['visual_search_results'] = visual_results
@@ -463,12 +453,12 @@ class VisualSearcher:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
-        print(f"{'='*70}")
-        print(f"✅ VISUAL SEARCH COMPLETE!")
-        print(f"📊 Searched: {len(crops_to_search)} images")
-        print(f"🎯 Found: {sum(len(r['visual_matches']) for r in visual_results)} matches")
-        print(f"📄 Saved to: {output_file}")
-        print(f"{'='*70}\n")
+        total_matches = sum(len(r['visual_matches']) for r in visual_results)
+        logger.info("visual search complete", extra={
+            "step": "enrich",
+            "count": total_matches,
+            "detail": f"searched={len(crops_to_search)}, matches={total_matches}, saved={output_file}"
+        })
         
         return analysis
     
@@ -480,31 +470,22 @@ class VisualSearcher:
         results = analysis.get('visual_search_results', [])
         
         if not results:
-            print("No visual search results found")
+            logger.info("no visual search results found", extra={"step": "visual_summary"})
             return
         
-        print(f"\n{'='*70}")
-        print(f"👁️  VISUAL SEARCH RESULTS SUMMARY")
-        print(f"{'='*70}\n")
+        logger.info("visual search results summary", extra={"step": "visual_summary", "count": len(results)})
         
         for item in results:
-            print(f"📦 {item['category'].upper()}: {item['description']}")
-            print(f"   Crop: {Path(item['crop_image']).name}")
-            print(f"   Found {len(item['visual_matches'])} visually similar products:\n")
+            logger.info("visual result", extra={
+                "step": "visual_summary",
+                "detail": f"{item['category'].upper()}: {item['description']}, crop={Path(item['crop_image']).name}, matches={len(item['visual_matches'])}"
+            })
             
             for i, match in enumerate(item['visual_matches'][:5], 1):
-                print(f"   {i}. {match['title'][:60]}...")
-                if match.get('price'):
-                    print(f"      Price: {match['price']}")
-                if match.get('source'):
-                    print(f"      Source: {match['source']}")
-                if match.get('link'):
-                    print(f"      Link: {match['link'][:50]}...")
-                print()
-            
-            if len(item['visual_matches']) > 5:
-                print(f"   ... and {len(item['visual_matches']) - 5} more\n")
-            print()
+                logger.debug("match", extra={
+                    "step": "visual_summary",
+                    "detail": f"{match['title'][:60]}, price={match.get('price', 'N/A')}, source={match.get('source', 'N/A')}"
+                })
 
 
 def main():
@@ -582,15 +563,13 @@ Note: Visual search is more accurate than text search for fashion/products.
             searcher.print_visual_search_summary(output_file)
     
     except ValueError as e:
-        print(f"\n❌ Error: {e}\n")
+        logger.error("configuration error", extra={"error": str(e), "step": "main"})
         exit(1)
     except FileNotFoundError:
-        print(f"\n❌ Error: File not found: {args.analysis_file}\n")
+        logger.error("file not found", extra={"error": args.analysis_file, "step": "main"})
         exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
-        import traceback
-        traceback.print_exc()
+        logger.error("unexpected error", extra={"error": str(e), "step": "main"})
         exit(1)
 
 

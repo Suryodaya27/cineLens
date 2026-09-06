@@ -12,7 +12,7 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 - **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built a Redis job queue + worker architecture so FastAPI acts as a thin gateway while a separate worker handles ML inference, with SSE streaming progress through to the browser. Parallelized scene analysis with cast lookup and detection to reduce wall time.
 
-- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Redis-backed result caching returns identical requests instantly (24h TTL). Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen.
+- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Redis-backed result caching returns identical requests instantly (24h TTL). Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen. Full observability via Grafana + Loki — every job traceable by ID through the entire pipeline with structured JSON logs.
 
 ## Architecture
 
@@ -72,6 +72,15 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
    (face embeddings)    (cast, images)     (scene/object analysis)
 ```
 
+### Observability Stack
+
+```
+cinelens-api  ─┐                 ┌─► Loki (:3100) ──► Grafana (:3001)
+               ├─ stdout (JSON) ─┤                    (dashboards, alerts)
+cinelens-worker┘                 └─ Promtail
+                                    (scrapes Docker logs, extracts job_id/level/step)
+```
+
 ## Key Design Decisions
 
 **Redis worker separation** — FastAPI doesn't run any ML inference. It enqueues jobs and proxies progress events. The worker process handles the heavy lifting. Multiple requests queue up without blocking the web server.
@@ -85,6 +94,8 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 **Scene-context injection** — YOLO only knows 80 COCO classes and often misclassifies objects (gun → cell phone, armor → vehicle). The scene analysis result is injected into each object's vision prompt so the LLM can override YOLO's label.
 
 **Post-vision reclassification** — After the vision model describes each object, a keyword check moves misclassified items to the correct UI category (e.g. "Iron Man Armored Suit" moves from Vehicles to Other Objects).
+
+**Structured observability** — Every Python module emits JSON logs to stdout with `job_id` context propagation via `ContextVar`. Promtail scrapes Docker container logs and pushes to Loki with `job_id`, `level`, `step` as indexed labels. Grafana provides a pre-provisioned dashboard with job dropdown and error panel. Zero new Python dependencies — uses stdlib `logging` + `json`.
 
 ## Tech Stack
 
@@ -100,22 +111,24 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 | Vision Analysis | Ollama (local LLM) |
 | Image Hosting | ImgBB |
 | Shopping | SerpAPI Google Shopping |
+| Observability | Grafana + Loki + Promtail (structured JSON logs) |
 
 ## Project Structure
 
 ```
-├── docker-compose.yml               All services (postgres, redis, api, worker, frontend)
+├── docker-compose.yml               All services (postgres, redis, api, worker, frontend, loki, promtail, grafana)
 ├── Frontend/
 │   ├── Dockerfile
-│   ├── app/page.tsx                  Main page (SSE progress + results)
+│   ├── app/page.tsx                  Main page (SSE progress + job_id display + results)
 │   ├── app/api/analyze-movie/        API route (ImgBB upload + SSE proxy)
 │   ├── components/input-panel.tsx    Movie name + image input
-│   └── components/output-panel.tsx   Results display
+│   └── components/output-panel.tsx   Results display (with job_id in header)
 │
 ├── Backend/
 │   ├── Dockerfile
 │   ├── api.py                        FastAPI gateway (enqueue + SSE proxy)
 │   ├── worker.py                     ML pipeline worker (Redis consumer)
+│   ├── logging_config.py             Structured JSON logging (job_id context propagation)
 │   ├── pipelines/                    ML modules
 │   │   └── updated_agentic_pipeline.py  YOLO + InsightFace + vision LLM
 │   ├── services/                     Business logic
@@ -126,6 +139,16 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 │   ├── scripts/                      Debug utilities
 │   ├── tests/                        Integration tests
 │   └── docs/                         Detailed documentation
+│
+├── observability/
+│   ├── promtail.yml                  Log collector config (scrapes Docker container logs)
+│   └── grafana/
+│       └── provisioning/
+│           ├── datasources/loki.yml  Loki datasource auto-config
+│           └── dashboards/
+│               ├── default.yml       Dashboard provider config
+│               └── json/
+│                   └── cinelens-jobs.json  Pre-built job log dashboard
 ```
 
 ## Prerequisites
@@ -145,8 +168,24 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 ```bash
 cp Backend/.env.example Backend/.env   # fill in API keys
-docker-compose up -d --build
+docker compose up -d --build
 # Ollama runs on host: ollama pull qwen3.8:latest
+```
+
+Services after startup:
+- **Frontend:** http://localhost:3000
+- **API:** http://localhost:8000/docs
+- **Grafana:** http://localhost:3001 (admin/admin)
+
+### Common Docker commands
+
+```bash
+docker compose up -d --build api worker   # rebuild after Python code changes
+docker compose up -d api worker           # restart after .env changes (no rebuild)
+docker compose up -d --build frontend     # rebuild after frontend code or env changes
+docker compose restart promtail           # reload promtail.yml config
+docker compose down                       # stop everything (volumes preserved)
+docker compose down -v                    # stop + delete all data (volumes removed)
 ```
 
 ### Option B: Local development
@@ -202,6 +241,39 @@ Environment variables in `Backend/.env`:
 | `VISION_MODEL` | No | Ollama model (default: `qwen3.8:latest`) |
 | `REDIS_URL` | No | Redis connection (default: `redis://localhost:6379/0`) |
 | `POSTGRES_*` | No | DB config (defaults: localhost/5432/face_recognition/postgres/postgres) |
+
+## Observability
+
+Every API call, pipeline step, and external service call is logged as structured JSON with `job_id` context — searchable in Grafana.
+
+**Access:** http://localhost:3001 (admin/admin) → Dashboards → CineLens Job Logs
+
+**What you see:**
+- Job ID dropdown auto-populated with recent jobs
+- Full pipeline timeline per job: download → init → cast → detect → identify → scene → objects → upload
+- Face match scores and actor names
+- TMDB/Ollama/ImgBB API call results and failures
+- Error panel with stack traces across all jobs
+- Log volume chart by container
+
+**How it works:**
+
+```
+Python logger → JSON to stdout → Docker captures → Promtail scrapes → Loki stores → Grafana queries
+```
+
+All Python modules use `logging_config.get_logger()` which emits one JSON object per line with `ts`, `level`, `job_id`, `step`, `msg`, and contextual fields (`actor`, `movie`, `error`, `count`, `duration`). Promtail extracts `job_id`, `level`, and `step` as Loki labels for fast filtering.
+
+The frontend also displays the current `job_id` during processing and in the results header — copy it into Grafana to inspect what happened.
+
+**Useful LogQL queries** (Grafana → Explore → Loki):
+
+```
+{container="cinelens-worker"} | json | level = `ERROR`        # all errors
+{container="cinelens-worker"} | json | step = `identify`       # face recognition results
+{container="cinelens-worker"} | json | step = `tmdb`           # TMDB API calls
+{container=~"cinelens-.*"} |= `some_job_id` | json            # everything for one job
+```
 
 ## Docs
 

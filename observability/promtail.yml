@@ -1,0 +1,39 @@
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only scrape cinelens containers (api + worker)
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(cinelens-api|cinelens-worker)'
+        action: keep
+      # Use container name as a label
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: container
+    pipeline_stages:
+      # Unwrap the Docker JSON log envelope
+      - docker: {}
+      # Try to parse JSON — silently skips non-JSON lines (plain text from uvicorn/YOLO)
+      - json:
+          expressions:
+            level: level
+            job_id: job_id
+            step: step
+            logger: logger
+      # Promote extracted fields to Loki labels (only set when JSON parse succeeds)
+      - labels:
+          level:
+          job_id:
+          step:
+          logger:

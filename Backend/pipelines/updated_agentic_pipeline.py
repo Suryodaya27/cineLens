@@ -33,6 +33,9 @@ try:
 except ImportError:
     pass
 
+from logging_config import get_logger
+logger = get_logger("pipeline")
+
 
 class TMDBCastFetcher:
     """Fetches cast information from TMDB API."""
@@ -48,11 +51,11 @@ class TMDBCastFetcher:
         self.image_base_url = "https://image.tmdb.org/t/p/original"
         self.cache_dir = Path("cache/tmdb/actors")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        print(f"📁 Actor images cache directory: {self.cache_dir.absolute()}")
+        logger.info("TMDB cache dir", extra={"detail": str(self.cache_dir.absolute())})
     
     def search_title(self, title: str, media_type: str = None) -> Optional[Dict]:
         """Search for movie or TV series by title."""
-        print(f"🔍 Searching TMDB for: {title}")
+        logger.info("Searching TMDB", extra={"step": "tmdb", "movie": title})
         
         # Try multi search first
         url = f"{self.base_url}/search/multi"
@@ -75,19 +78,22 @@ class TMDBCastFetcher:
                 
                 if results:
                     result = results[0]
-                    print(f"✓ Found: {result.get('title') or result.get('name')} "
-                          f"({result.get('media_type')})")
+                    logger.info("TMDB title found", extra={
+                        "step": "tmdb",
+                        "movie": result.get('title') or result.get('name'),
+                        "detail": result.get('media_type')
+                    })
                     return result
             
-            print(f"❌ Title not found: {title}")
+            logger.warning("TMDB title not found", extra={"step": "tmdb", "movie": title})
             return None
         except Exception as e:
-            print(f"❌ Error searching TMDB: {e}")
+            logger.error("TMDB search failed", extra={"step": "tmdb", "error": str(e)})
             return None
     
     def get_cast(self, tmdb_id: int, media_type: str, max_cast: int = 20) -> List[Dict]:
         """Get cast list for a movie or TV series."""
-        print(f"👥 Fetching cast for {media_type} ID {tmdb_id}...")
+        logger.info("Fetching cast", extra={"step": "tmdb", "detail": f"{media_type} ID {tmdb_id}"})
         
         url = f"{self.base_url}/{media_type}/{tmdb_id}/credits"
         params = {
@@ -110,10 +116,10 @@ class TMDBCastFetcher:
                     'order': member.get('order', 999)
                 })
             
-            print(f"✓ Found {len(cast_list)} cast members")
+            logger.info("Cast loaded", extra={"step": "tmdb", "count": len(cast_list)})
             return cast_list
         except Exception as e:
-            print(f"❌ Error fetching cast: {e}")
+            logger.error("Cast fetch failed", extra={"step": "tmdb", "error": str(e)})
             return []
     
     def get_actor_images(self, actor_id: int, max_images: int = 5) -> List[str]:
@@ -133,7 +139,7 @@ class TMDBCastFetcher:
             
             return image_urls
         except Exception as e:
-            print(f"  ⚠️  Error fetching images for actor {actor_id}: {e}")
+            logger.warning("Actor images fetch failed", extra={"step": "tmdb", "error": str(e), "detail": f"actor {actor_id}"})
             return []
     
     def download_image(self, url: str, save_path: Path, max_retries: int = 3) -> bool:
@@ -158,19 +164,19 @@ class TMDBCastFetcher:
                 
             except requests.exceptions.Timeout:
                 if attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 2  # 2s, 4s, 6s
-                    print(f"  ⏱️  Timeout, retrying in {wait_time}s... (attempt {attempt + 2}/{max_retries})")
+                    wait_time = (attempt + 1) * 2
+                    logger.warning("Image download timeout, retrying", extra={"step": "tmdb", "detail": f"attempt {attempt + 2}/{max_retries}"})
                     time.sleep(wait_time)
                 else:
-                    print(f"  ⚠️  Timeout after {max_retries} attempts")
+                    logger.error("Image download timeout", extra={"step": "tmdb", "error": f"timeout after {max_retries} attempts"})
                     return False
                     
             except Exception as e:
                 if attempt < max_retries - 1:
-                    print(f"  ⚠️  Error: {e}, retrying...")
+                    logger.warning("Image download error, retrying", extra={"step": "tmdb", "error": str(e)})
                     time.sleep(2)
                 else:
-                    print(f"  ⚠️  Failed after {max_retries} attempts: {e}")
+                    logger.error("Image download failed", extra={"step": "tmdb", "error": str(e), "detail": f"after {max_retries} attempts"})
                     return False
         
         return False
@@ -183,13 +189,11 @@ class TMDBCastFetcher:
         # Check if already cached
         existing_images = list(actor_dir.glob("*.jpg"))
         if existing_images:
-            print(f"  ✓ Using cached images from: {actor_dir}")
-            print(f"    Images: {[p.name for p in existing_images]}")
+            logger.debug("Using cached actor images", extra={"actor": actor_name, "count": len(existing_images)})
             return [str(p) for p in existing_images]
         
         # Download new images
-        print(f"  📥 Downloading images for {actor_name}...")
-        print(f"    Saving to: {actor_dir}")
+        logger.info("Downloading actor images", extra={"step": "tmdb", "actor": actor_name})
         image_urls = self.get_actor_images(actor_id, max_images)
         
         cached_paths = []
@@ -197,9 +201,8 @@ class TMDBCastFetcher:
             save_path = actor_dir / f"profile_{idx}.jpg"
             if self.download_image(url, save_path):
                 cached_paths.append(str(save_path))
-                print(f"    ✓ Saved: {save_path.name}")
         
-        print(f"  ✓ Cached {len(cached_paths)} images in {actor_dir}")
+        logger.info("Actor images cached", extra={"actor": actor_name, "count": len(cached_paths)})
         return cached_paths
 
 
@@ -226,10 +229,9 @@ class FaceEmbeddingDB:
         """Connect to PostgreSQL."""
         try:
             self.conn = psycopg2.connect(**self.db_config)
-            print("✓ Connected to PostgreSQL")
+            logger.info("Connected to PostgreSQL", extra={"step": "db"})
         except Exception as e:
-            print(f"❌ Database connection failed: {e}")
-            print("   Make sure PostgreSQL is running and pgvector extension is installed")
+            logger.error("Database connection failed", extra={"step": "db", "error": str(e)})
             raise
     
     def _init_tables(self):
@@ -267,7 +269,7 @@ class FaceEmbeddingDB:
                 """)
             
             self.conn.commit()
-            print("✓ Database tables initialized")
+            logger.info("Database tables initialized", extra={"step": "db"})
     
     def store_embedding(self, actor_id: int, actor_name: str, 
                        image_path: str, embedding: np.ndarray):
@@ -292,9 +294,7 @@ class FaceEmbeddingDB:
             embedding_list = embedding.tolist()
             
             if debug:
-                print(f"    ✓ DEBUG: Embedding type: {type(embedding)}, shape: {embedding.shape if hasattr(embedding, 'shape') else 'N/A'}")
-                print(f"    ✓ DEBUG: Embedding list length: {len(embedding_list)}, type: {type(embedding_list)}")
-                print(f"    ✓ DEBUG: First 3 values: {embedding_list[:3]}")
+                logger.debug("Face search params", extra={"step": "face", "detail": f"dim={len(embedding_list)} threshold={threshold}"})
             
             # Debug: Check if actors exist in database
             if debug and actor_ids:
@@ -307,14 +307,12 @@ class FaceEmbeddingDB:
                 """, tuple(actor_ids))
                 found_actors = cur.fetchall()
                 if not found_actors:
-                    print(f"    ⚠️  DEBUG: No embeddings found for actor IDs: {actor_ids[:5]}...")
+                    logger.warning("No embeddings found for cast", extra={"step": "face", "detail": f"actor IDs: {actor_ids[:5]}"})
                 else:
-                    print(f"    ✓ DEBUG: Found {len(found_actors)} actors with embeddings")
+                    logger.debug("Actors with embeddings", extra={"step": "face", "count": len(found_actors)})
             
             # Build query with optional actor filter
-            # Note: We pass embedding twice - once for SELECT, once for ORDER BY
             if actor_ids:
-                # Use IN clause with explicit actor IDs
                 placeholders = ','.join(['%s'] * len(actor_ids))
                 query = f"""
                     SELECT actor_id, actor_name, image_path,
@@ -324,7 +322,6 @@ class FaceEmbeddingDB:
                     ORDER BY embedding <=> %s::vector
                     LIMIT %s
                 """
-                # Build params: [embedding, actor_ids..., embedding, limit]
                 params = [embedding_list] + list(actor_ids) + [embedding_list, limit]
             else:
                 query = """
@@ -341,11 +338,10 @@ class FaceEmbeddingDB:
                 rows = cur.fetchall()
                 
                 if debug:
-                    print(f"    ✓ DEBUG: Query returned {len(rows)} rows")
+                    logger.debug("Face query results", extra={"step": "face", "count": len(rows)})
                 
             except Exception as e:
-                if debug:
-                    print(f"    ❌ DEBUG: Query failed: {e}")
+                logger.error("Face query failed", extra={"step": "face", "error": str(e)})
                 return []
             
             all_results = []
@@ -363,16 +359,9 @@ class FaceEmbeddingDB:
                 if similarity >= threshold:
                     results.append(result)
             
-            # Debug output
-            if debug:
-                if all_results:
-                    print(f"    Top {len(all_results)} matches:")
-                    for i, r in enumerate(all_results, 1):
-                        status = "✓" if r['similarity'] >= threshold else "✗"
-                        print(f"      {status} {i}. {r['actor_name']}: {r['similarity']:.3f} ({r['confidence']}%)")
-                else:
-                    print(f"    ⚠️  No embeddings found for the specified cast members")
-                    print(f"       Cast may not have been cached properly")
+            if debug and all_results:
+                top_matches = ", ".join(f"{r['actor_name']}:{r['confidence']}%" for r in all_results[:3])
+                logger.info("Face match results", extra={"step": "face", "detail": top_matches})
             
             return results
     
@@ -390,10 +379,10 @@ class InsightFaceRecognizer:
         try:
             from insightface.app import FaceAnalysis
             
-            print("🔧 Loading InsightFace model...")
+            logger.info("Loading InsightFace model", extra={"step": "init"})
             self.app = FaceAnalysis(providers=['CPUExecutionProvider'])
             self.app.prepare(ctx_id=0, det_size=(640, 640))
-            print("✓ InsightFace model loaded")
+            logger.info("InsightFace model loaded", extra={"step": "init"})
         except ImportError:
             raise ImportError(
                 "InsightFace not installed. Install with: pip install insightface onnxruntime"
@@ -403,43 +392,40 @@ class InsightFaceRecognizer:
         """Extract face embedding from image."""
         img = cv2.imread(image_path)
         if img is None:
-            if debug:
-                print(f"      ⚠️  Could not read image: {image_path}")
+            logger.debug("Could not read image", extra={"step": "face", "detail": image_path})
             return None
         
         faces = self.app.get(img)
         if not faces:
-            if debug:
-                print(f"      ⚠️  No face detected in: {Path(image_path).name}")
+            logger.debug("No face detected", extra={"step": "face", "detail": Path(image_path).name})
             return None
         
         # Return embedding of first/largest face
         face = max(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]))
         
         if debug:
-            print(f"      ✓ Face detected (size: {int(face.bbox[2]-face.bbox[0])}x{int(face.bbox[3]-face.bbox[1])})")
+            logger.debug("Face detected", extra={"step": "face", "detail": f"{int(face.bbox[2]-face.bbox[0])}x{int(face.bbox[3]-face.bbox[1])}"})
         
         return face.embedding
     
     def extract_embeddings_from_crop(self, image: np.ndarray, debug: bool = False) -> Optional[np.ndarray]:
         """Extract face embedding from cropped image array."""
         if image is None or image.size == 0:
-            if debug:
-                print(f"      ⚠️  Invalid image array")
+            logger.debug("Invalid image array", extra={"step": "face"})
             return None
         
         faces = self.app.get(image)
         if not faces:
             if debug:
                 h, w = image.shape[:2]
-                print(f"      ⚠️  No face detected in crop (size: {w}x{h})")
+                logger.debug("No face in crop", extra={"step": "face", "detail": f"{w}x{h}"})
             return None
         
         # Return embedding of first/largest face
         face = max(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]))
         
         if debug:
-            print(f"      ✓ Face detected in crop (size: {int(face.bbox[2]-face.bbox[0])}x{int(face.bbox[3]-face.bbox[1])})")
+            logger.debug("Face detected in crop", extra={"step": "face", "detail": f"{int(face.bbox[2]-face.bbox[0])}x{int(face.bbox[3]-face.bbox[1])}"})
         
         return face.embedding
 
@@ -465,11 +451,11 @@ class UpdatedAgenticPipeline:
                 replay_host = os.getenv('LLM_REPLAY_HOST')
                 if replay_host:
                     self.ollama = ollama.Client(host=replay_host)
-                    print(f"✓ LLM Replay proxy: {replay_host}")
+                    logger.info("LLM Replay proxy configured", extra={"step": "init", "detail": replay_host})
                 else:
                     self.ollama = ollama
                 self.vision_model = vision_model or "llama3.2-vision:11b"
-                print(f"✓ Vision model enabled: {self.vision_model}")
+                logger.info("Vision model enabled", extra={"step": "init", "detail": self.vision_model})
                 
                 # Load prompts
                 prompts_file = Path(__file__).parent / "prompts_context.json"
@@ -479,15 +465,13 @@ class UpdatedAgenticPipeline:
                 else:
                     self.prompts = self._get_default_prompts()
             except ImportError:
-                print("⚠️  Ollama not installed. Vision analysis disabled.")
+                logger.warning("Ollama not installed, vision analysis disabled", extra={"step": "init"})
                 self.use_vision_analysis = False
     
     def prepare_movie_cast(self, movie_title: str, media_type: str = None,
                           max_cast: int = 20, images_per_actor: int = 5) -> Optional[Dict]:
         """Prepare cast data for a movie/series."""
-        print(f"\n{'='*70}")
-        print(f"🎬 PREPARING CAST DATA: {movie_title}")
-        print(f"{'='*70}\n")
+        logger.info("Preparing cast data", extra={"step": "cast", "movie": movie_title})
         
         # Search for title
         title_data = self.tmdb.search_title(movie_title, media_type)
@@ -503,14 +487,14 @@ class UpdatedAgenticPipeline:
             return None
         
         # Download images and generate embeddings
-        print(f"\n📸 Processing {len(cast_list)} cast members...\n")
+        logger.info("Processing cast members", extra={"step": "cast", "count": len(cast_list)})
         
         processed_cast = []
         for idx, member in enumerate(cast_list, 1):
             actor_id = member['id']
             actor_name = member['name']
             
-            print(f"[{idx}/{len(cast_list)}] {actor_name}")
+            logger.debug("Processing actor", extra={"step": "cast", "actor": actor_name, "detail": f"{idx}/{len(cast_list)}"})
             
             # Cache images
             image_paths = self.tmdb.cache_actor_images(
@@ -518,7 +502,7 @@ class UpdatedAgenticPipeline:
             )
             
             if not image_paths:
-                print(f"  ⚠️  No images found, skipping")
+                logger.warning("No images found for actor", extra={"step": "cast", "actor": actor_name})
                 continue
             
             # Check if embeddings already exist in database
@@ -529,7 +513,7 @@ class UpdatedAgenticPipeline:
                 existing_count = cur.fetchone()[0]
             
             if existing_count > 0:
-                print(f"  ✓ Already has {existing_count} embeddings in database")
+                logger.debug("Actor has existing embeddings", extra={"actor": actor_name, "count": existing_count})
                 processed_cast.append(member)
             else:
                 # Generate and store embeddings
@@ -541,10 +525,10 @@ class UpdatedAgenticPipeline:
                         embeddings_stored += 1
                 
                 if embeddings_stored > 0:
-                    print(f"  ✓ Stored {embeddings_stored}/{len(image_paths)} face embeddings")
+                    logger.info("Stored face embeddings", extra={"step": "cast", "actor": actor_name, "count": embeddings_stored})
                     processed_cast.append(member)
                 else:
-                    print(f"  ⚠️  No faces detected in any of the {len(image_paths)} images")
+                    logger.warning("No faces detected for actor", extra={"step": "cast", "actor": actor_name, "detail": f"{len(image_paths)} images tried"})
         
         movie_context = {
             'title': title_data.get('title') or title_data.get('name'),
@@ -554,12 +538,12 @@ class UpdatedAgenticPipeline:
             'cast': processed_cast
         }
         
-        print(f"\n✓ Prepared {len(processed_cast)} cast members with face embeddings")
+        logger.info("Cast preparation complete", extra={"step": "cast", "count": len(processed_cast), "movie": movie_context['title']})
         return movie_context
     
     def detect_all_objects(self, image_path: str, min_confidence: float = 0.5) -> Dict:
         """Detect all objects in image using YOLO."""
-        print("🔍 Detecting all objects in image...")
+        logger.info("Running YOLO detection", extra={"step": "detect"})
         
         results = self.yolo(image_path)
         detections = {
@@ -603,7 +587,6 @@ class UpdatedAgenticPipeline:
                     'confidence': confidence
                 }
                 
-                # Categorize detection
                 if cls_name == 'person':
                     detections['people'].append(detection)
                 elif cls_name in animal_classes:
@@ -619,13 +602,9 @@ class UpdatedAgenticPipeline:
                 else:
                     detections['other'].append(detection)
         
-        # Print summary
         total = sum(len(v) for v in detections.values())
-        print(f"✓ Detected {total} objects:")
-        for category, items in detections.items():
-            if items:
-                classes = ', '.join(set(item['class'] for item in items))
-                print(f"  • {category.capitalize()}: {len(items)} ({classes})")
+        summary = {k: len(v) for k, v in detections.items() if v}
+        logger.info("YOLO detection complete", extra={"step": "detect", "count": total, "detail": str(summary)})
         
         return detections
     
@@ -695,7 +674,7 @@ class UpdatedAgenticPipeline:
                 'context': 'Fast mode - scene analysis skipped'
             }
         
-        print("  🎬 Analyzing scene with vision model...")
+        logger.info("Analyzing scene with vision model", extra={"step": "scene"})
         image_data = self._encode_image(image_path)
         prompt = self.prompts['scene_analysis']['prompt']
         
@@ -824,19 +803,14 @@ class UpdatedAgenticPipeline:
     def identify_person(self, cropped_image: np.ndarray, cast_actor_ids: List[int],
                        similarity_threshold: float = 0.6, debug: bool = True) -> Optional[Dict]:
         """Identify person using face recognition."""
-        # Extract face embedding
         embedding = self.face_recognizer.extract_embeddings_from_crop(cropped_image)
         if embedding is None:
-            print(f"    ⚠️  No face detected in cropped image")
+            logger.debug("No face detected in crop", extra={"step": "identify"})
             return None
         
-        print(f"    ✓ Face embedding extracted (dim: {len(embedding)})")
+        logger.debug("Face embedding extracted", extra={"step": "identify", "detail": f"dim={len(embedding)}"})
+        logger.debug("Searching cast", extra={"step": "identify", "count": len(cast_actor_ids)})
         
-        if debug:
-            print(f"    🔍 Searching among {len(cast_actor_ids)} cast members (IDs: {cast_actor_ids[:5]}{'...' if len(cast_actor_ids) > 5 else ''})")
-        
-        # Search in database (only among cast members)
-        # Get top 5 matches to show debug info
         matches = self.db.search_similar(
             embedding,
             actor_ids=cast_actor_ids,
@@ -848,37 +822,27 @@ class UpdatedAgenticPipeline:
         if matches:
             return matches[0]
         
-        # If no match, show why - also check without actor filter to see if person exists
+        # If no match, check entire database for diagnostics
         if debug:
-            print(f"    🔍 Checking entire database for best match...")
-            # Check if there are ANY matches in the entire database
+            logger.debug("No cast match, checking full database", extra={"step": "identify"})
             all_matches = self.db.search_similar(
                 embedding,
-                actor_ids=None,  # Search all actors
-                threshold=0.0,   # No threshold
+                actor_ids=None,
+                threshold=0.0,
                 limit=5,
                 debug=False
             )
             
             if all_matches:
-                print(f"    📊 Top matches across ALL actors:")
-                for i, m in enumerate(all_matches[:3], 1):
-                    in_cast = "✓ IN CAST" if m['actor_id'] in cast_actor_ids else "✗ NOT IN CAST"
-                    print(f"       {i}. {m['actor_name']}: {m['similarity']:.3f} ({m['confidence']}%) {in_cast}")
-                
                 best = all_matches[0]
-                if best['similarity'] >= similarity_threshold:
-                    if best['actor_id'] in cast_actor_ids:
-                        print(f"    ⚠️  Match found but query returned 0 rows - possible database issue")
-                    else:
-                        print(f"    ⚠️  Best match is NOT in cast list:")
-                        print(f"       {best['actor_name']}: {best['similarity']:.3f} ({best['confidence']}%)")
-                else:
-                    print(f"    ❌ No match above threshold {similarity_threshold}")
-                    print(f"       Best match: {best['actor_name']} ({best['confidence']}%)")
-                    print(f"       Try lowering threshold with --threshold parameter")
+                in_cast = best['actor_id'] in cast_actor_ids
+                logger.info("Best global match", extra={
+                    "step": "identify",
+                    "actor": best['actor_name'],
+                    "detail": f"{best['confidence']}% {'(in cast)' if in_cast else '(not in cast)'}"
+                })
             else:
-                print(f"    ❌ No embeddings found in entire database")
+                logger.warning("No embeddings in database", extra={"step": "identify"})
         
         return None
     
@@ -888,7 +852,7 @@ class UpdatedAgenticPipeline:
         if not detections or not self.use_vision_analysis:
             return []
         
-        print(f"\n📦 Processing {len(detections)} {category}...")
+        logger.info("Processing objects with vision", extra={"step": "objects", "count": len(detections), "detail": category})
         
         results = []
         img = cv2.imread(image_path)
@@ -924,7 +888,7 @@ class UpdatedAgenticPipeline:
                 analysis['crop_image'] = str(crop_path)
                 analysis['detection_confidence'] = detection['confidence']
                 results.append(analysis)
-                print(f"  ✓ {detection['class']} {idx}")
+                logger.debug("Object analyzed", extra={"step": "objects", "detail": f"{detection['class']} {idx}"})
         
         return results
     
@@ -932,33 +896,23 @@ class UpdatedAgenticPipeline:
                      output_dir: str = "output",
                      similarity_threshold: float = 0.6) -> Dict:
         """Process image with fast face recognition pipeline."""
-        print(f"\n{'='*70}")
-        print(f"🚀 UPDATED AGENTIC PIPELINE")
-        print(f"📷 Image: {Path(image_path).name}")
-        print(f"🎬 Movie: {movie_title}")
-        print(f"{'='*70}\n")
+        logger.info("Pipeline started", extra={"step": "start", "movie": movie_title, "image_url": Path(image_path).name})
         
         # Prepare cast data
         movie_context = self.prepare_movie_cast(movie_title)
         if not movie_context:
-            print("❌ Failed to prepare cast data")
+            logger.error("Failed to prepare cast data", extra={"step": "cast", "movie": movie_title})
             return None
         
         cast_actor_ids = [member['id'] for member in movie_context['cast']]
         
-        print(f"\n✓ Cast prepared: {len(cast_actor_ids)} actors")
-        print(f"  Actor IDs: {cast_actor_ids}")
+        logger.info("Cast prepared", extra={"step": "cast", "count": len(cast_actor_ids)})
         
         # Detect all objects
-        print(f"\n{'='*70}")
-        print("🔍 ANALYZING IMAGE")
-        print(f"{'='*70}\n")
-        
         all_detections = self.detect_all_objects(image_path)
         
         if not all_detections['people']:
-            print("⚠️  No people detected in image")
-            # Continue anyway to detect other objects
+            logger.warning("No people detected in image", extra={"step": "detect"})
         
         # Process each detected person
         output_path = Path(output_dir)
@@ -967,10 +921,10 @@ class UpdatedAgenticPipeline:
         identified_people = []
         
         if all_detections['people']:
-            print(f"\n👤 Identifying {len(all_detections['people'])} people...\n")
+            logger.info("Identifying people", extra={"step": "identify", "count": len(all_detections['people'])})
         
         for idx, detection in enumerate(all_detections['people'], 1):
-            print(f"[{idx}/{len(all_detections['people'])}] Processing person...")
+            logger.debug("Processing person", extra={"step": "identify", "detail": f"{idx}/{len(all_detections['people'])}"})
             
             # Crop person
             cropped = self.crop_person(image_path, detection['bbox'])
@@ -986,16 +940,16 @@ class UpdatedAgenticPipeline:
             
             # Analyze person details with vision model (if enabled)
             if self.use_vision_analysis:
-                print(f"  👁️  Analyzing details with vision model...")
+                logger.debug("Analyzing person with vision model", extra={"step": "identify", "detail": f"person {idx}"})
                 vision_details = self.analyze_person_details(str(crop_path))
             else:
                 vision_details = {}
             
             if match:
-                print(f"  ✓ Identified: {match['actor_name']} "
-                      f"(confidence: {match['confidence']}%)")
-                print(f"    Matched to: {Path(match['image_path']).name}")
-                print(f"    Full path: {match['image_path']}")
+                logger.info("Person identified", extra={
+                    "step": "identify", "actor": match['actor_name'],
+                    "detail": f"{match['confidence']}% matched to {Path(match['image_path']).name}"
+                })
                 
                 # Find cast member details
                 cast_member = next(
@@ -1026,7 +980,7 @@ class UpdatedAgenticPipeline:
                     'detection_confidence': detection['confidence']
                 }
             else:
-                print(f"  ❌ Unknown person (no match above threshold)")
+                logger.info("Unknown person", extra={"step": "identify", "detail": f"person {idx} below threshold"})
                 person_data = {
                     'name': None,
                     'profession': None,
@@ -1051,7 +1005,7 @@ class UpdatedAgenticPipeline:
             identified_people.append(person_data)
         
         # Analyze scene (if vision model enabled)
-        print(f"\n🎬 Scene Analysis...")
+        logger.info("Running scene analysis", extra={"step": "scene"})
         scene_analysis = self.analyze_scene_with_vision(image_path)
         
         # Build result matching agentic_pipeline.py output format
@@ -1107,23 +1061,11 @@ class UpdatedAgenticPipeline:
         with open(result_file, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         
-        print(f"\n{'='*70}")
-        print(f"✅ COMPLETE!")
-        print(f"📄 Analysis: {result_file}")
-        print(f"🖼️  Crops: {output_dir}/")
-        print(f"{'='*70}\n")
-        
-        # Print summary
-        print("📊 SUMMARY:")
-        print(f"Movie: {movie_context['title']} ({movie_context['year']})")
-        print(f"\nIdentified {len([p for p in identified_people if p['name']])} / "
-              f"{len(identified_people)} people:")
-        for person in identified_people:
-            if person['name']:
-                char = f" as {person['character']}" if person['character'] else ""
-                print(f"  ✓ {person['name']}{char} ({person['confidence']}%)")
-            else:
-                print(f"  ❌ Unknown person")
+        identified_count = len([p for p in identified_people if p['name']])
+        logger.info("Pipeline complete", extra={
+            "step": "done", "movie": movie_context['title'],
+            "detail": f"identified {identified_count}/{len(identified_people)} people"
+        })
         
         return result
     
@@ -1204,9 +1146,7 @@ Database setup:
             exit(1)
     
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Pipeline error", extra={"error": str(e)})
         exit(1)
 
 

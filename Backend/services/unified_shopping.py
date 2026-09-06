@@ -14,6 +14,9 @@ import sys
 from .amazon_shopping import AmazonShopper
 from .visual_search import VisualSearcher
 
+from logging_config import get_logger
+logger = get_logger("shopping")
+
 
 class UnifiedShopper:
     """Unified shopping using both text and visual search."""
@@ -26,9 +29,10 @@ class UnifiedShopper:
             amazon_region: Amazon region (com, in, co.uk, etc.)
             visual_provider: Visual search provider (serpapi, bing-visual)
         """
-        print(f"🛍️  Initializing Unified Shopping Pipeline...")
-        print(f"   Amazon region: {amazon_region}")
-        print(f"   Visual search: {visual_provider}\n")
+        logger.info("initializing unified shopping pipeline", extra={
+            "step": "init",
+            "detail": f"amazon_region={amazon_region}, visual_provider={visual_provider}"
+        })
         
         self.amazon = AmazonShopper(amazon_region)
         self.visual = VisualSearcher(visual_provider)
@@ -52,32 +56,27 @@ class UnifiedShopper:
         Returns:
             Enriched analysis with shopping results
         """
-        print(f"\n{'='*70}")
-        print(f"🛍️  UNIFIED SHOPPING PIPELINE")
-        print(f"{'='*70}\n")
+        logger.info("unified shopping pipeline started", extra={"step": "unified_enrich", "detail": analysis_file})
         
         # Load analysis
         with open(analysis_file, 'r') as f:
             analysis = json.load(f)
         
-        print(f"📄 Loaded: {analysis_file}\n")
+        logger.info("analysis loaded", extra={"step": "unified_enrich", "detail": analysis_file})
         
         # ============================================================
         # PART 1: TEXT SEARCH (Amazon) for Clothing
         # ============================================================
-        print(f"{'='*70}")
-        print(f"🔤 PART 1: TEXT SEARCH (Amazon)")
-        print(f"   Best for: Clothing, accessories, style descriptions")
-        print(f"{'='*70}\n")
+        logger.info("text search phase started (amazon) — best for clothing, accessories, style descriptions", extra={"step": "text_search"})
         
         text_searchable = self._extract_text_searchable_items(analysis)
         
         if text_searchable:
-            print(f"🔍 Found {len(text_searchable)} items for text search\n")
+            logger.info("text-searchable items found", extra={"step": "text_search", "count": len(text_searchable)})
             
             text_results = []
             for i, item in enumerate(text_searchable, 1):
-                print(f"[{i}/{len(text_searchable)}] {item['category']}: {item['type']}")
+                logger.info("text search item", extra={"step": "text_search", "detail": f"{item['category']}: {item['type']} ({i}/{len(text_searchable)})"})
                 
                 # Build query
                 query = self.amazon.build_search_query(item['data'], item['category'])
@@ -94,29 +93,25 @@ class UnifiedShopper:
                             'search_method': 'text',
                             'products': products
                         })
-                print()
             
-            print(f"✅ Text search complete: {len(text_results)} successful searches\n")
+            logger.info("text search phase complete", extra={"step": "text_search", "count": len(text_results)})
         else:
-            print(f"ℹ️  No items for text search\n")
+            logger.info("no items for text search", extra={"step": "text_search"})
             text_results = []
         
         # ============================================================
         # PART 2: VISUAL SEARCH (SerpAPI) for Objects
         # ============================================================
-        print(f"{'='*70}")
-        print(f"👁️  PART 2: VISUAL SEARCH (SerpAPI + Google Lens)")
-        print(f"   Best for: Products, electronics, furniture, accessories")
-        print(f"{'='*70}\n")
+        logger.info("visual search phase started (serpapi + google lens) — best for products, electronics, furniture", extra={"step": "visual_search"})
         
         visual_searchable = self._extract_visual_searchable_items(analysis)
         
         if visual_searchable:
-            print(f"🔍 Found {len(visual_searchable)} items for visual search\n")
+            logger.info("visual-searchable items found", extra={"step": "visual_search", "count": len(visual_searchable)})
             
             visual_results = []
             for i, item in enumerate(visual_searchable, 1):
-                print(f"[{i}/{len(visual_searchable)}] {item['category']}: {item['description']}")
+                logger.info("visual search item", extra={"step": "visual_search", "detail": f"{item['category']}: {item['description']} ({i}/{len(visual_searchable)})"})
                 
                 # Visual search by image
                 products = self.visual.search_by_image(item['path'], max_visual_results)
@@ -129,11 +124,10 @@ class UnifiedShopper:
                         'search_method': 'visual',
                         'products': products
                     })
-                print()
             
-            print(f"✅ Visual search complete: {len(visual_results)} successful searches\n")
+            logger.info("visual search phase complete", extra={"step": "visual_search", "count": len(visual_results)})
         else:
-            print(f"ℹ️  No items for visual search\n")
+            logger.info("no items for visual search", extra={"step": "visual_search"})
             visual_results = []
         
         # ============================================================
@@ -160,16 +154,12 @@ class UnifiedShopper:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
-        # Summary
-        print(f"{'='*70}")
-        print(f"✅ UNIFIED SHOPPING COMPLETE!")
-        print(f"{'='*70}")
-        print(f"📊 Total searches: {len(text_searchable) + len(visual_searchable)}")
-        print(f"   🔤 Text searches: {len(text_results)} (clothing, accessories)")
-        print(f"   👁️  Visual searches: {len(visual_results)} (products, objects)")
-        print(f"📦 Total products found: {sum(len(r['products']) for r in all_results)}")
-        print(f"📄 Saved to: {output_file}")
-        print(f"{'='*70}\n")
+        total_products = sum(len(r['products']) for r in all_results)
+        logger.info("unified shopping complete", extra={
+            "step": "unified_enrich",
+            "count": total_products,
+            "detail": f"text={len(text_results)}, visual={len(visual_results)}, total_products={total_products}, saved={output_file}"
+        })
         
         return analysis
     
@@ -334,54 +324,42 @@ class UnifiedShopper:
         results = analysis.get('unified_shopping_results', [])
         
         if not results:
-            print("No shopping results found")
+            logger.info("no shopping results found", extra={"step": "unified_summary"})
             return
         
-        print(f"\n{'='*70}")
-        print(f"🛍️  UNIFIED SHOPPING RESULTS SUMMARY")
-        print(f"{'='*70}\n")
+        logger.info("unified shopping results summary", extra={"step": "unified_summary", "count": len(results)})
         
         # Group by search method
         text_results = [r for r in results if r.get('search_method') == 'text']
         visual_results = [r for r in results if r.get('search_method') == 'visual']
         
         if text_results:
-            print(f"🔤 TEXT SEARCH RESULTS (Amazon) - {len(text_results)} items\n")
+            logger.info("text search results (amazon)", extra={"step": "unified_summary", "count": len(text_results)})
             for item in text_results:
-                print(f"📦 {item['category'].upper()}: {item['type']}")
-                print(f"   Query: {item.get('search_query', 'N/A')}")
-                print(f"   Found {len(item['products'])} products:\n")
+                logger.info("text result", extra={
+                    "step": "unified_summary",
+                    "detail": f"{item['category'].upper()}: {item['type']}, query={item.get('search_query', 'N/A')}, products={len(item['products'])}"
+                })
                 
                 for i, product in enumerate(item['products'][:3], 1):
-                    print(f"   {i}. {product['title'][:60]}...")
-                    if product.get('price'):
-                        print(f"      Price: ${product['price']}")
-                    if product.get('rating'):
-                        print(f"      Rating: {product['rating']}")
-                    print()
-                
-                if len(item['products']) > 3:
-                    print(f"   ... and {len(item['products']) - 3} more\n")
-                print()
+                    logger.debug("product", extra={
+                        "step": "unified_summary",
+                        "detail": f"{product['title'][:60]}, price={product.get('price', 'N/A')}, rating={product.get('rating', 'N/A')}"
+                    })
         
         if visual_results:
-            print(f"👁️  VISUAL SEARCH RESULTS (SerpAPI) - {len(visual_results)} items\n")
+            logger.info("visual search results (serpapi)", extra={"step": "unified_summary", "count": len(visual_results)})
             for item in visual_results:
-                print(f"📦 {item['category'].upper()}: {item['type']}")
-                print(f"   Crop: {Path(item.get('crop_image', '')).name}")
-                print(f"   Found {len(item['products'])} visually similar products:\n")
+                logger.info("visual result", extra={
+                    "step": "unified_summary",
+                    "detail": f"{item['category'].upper()}: {item['type']}, crop={Path(item.get('crop_image', '')).name}, products={len(item['products'])}"
+                })
                 
                 for i, product in enumerate(item['products'][:3], 1):
-                    print(f"   {i}. {product['title'][:60]}...")
-                    if product.get('price'):
-                        print(f"      Price: {product['price']}")
-                    if product.get('source'):
-                        print(f"      Source: {product['source']}")
-                    print()
-                
-                if len(item['products']) > 3:
-                    print(f"   ... and {len(item['products']) - 3} more\n")
-                print()
+                    logger.debug("product", extra={
+                        "step": "unified_summary",
+                        "detail": f"{product['title'][:60]}, price={product.get('price', 'N/A')}, source={product.get('source', 'N/A')}"
+                    })
 
 
 def main():
@@ -465,15 +443,13 @@ Setup:
             shopper.print_summary(output_file)
     
     except ValueError as e:
-        print(f"\n❌ Error: {e}\n")
+        logger.error("configuration error", extra={"error": str(e), "step": "main"})
         exit(1)
     except FileNotFoundError:
-        print(f"\n❌ Error: File not found: {args.analysis_file}\n")
+        logger.error("file not found", extra={"error": args.analysis_file, "step": "main"})
         exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}\n")
-        import traceback
-        traceback.print_exc()
+        logger.error("unexpected error", extra={"error": str(e), "step": "main"})
         exit(1)
 
 

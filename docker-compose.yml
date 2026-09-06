@@ -15,7 +15,7 @@ services:
     volumes:
       - pgvector_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,6 +60,9 @@ services:
       POSTGRES_HOST: postgres
       REDIS_URL: redis://redis:6379/0
       OLLAMA_HOST: http://host.docker.internal:11434
+      LLM_REPLAY_HOST: http://host.docker.internal:11435
+    volumes:
+      - ml_models:/ml_cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,15 +72,62 @@ services:
   # --- Frontend ---
 
   frontend:
-    build: ./Frontend
+    build:
+      context: ./Frontend
+      args:
+        IMGBB_API_KEY: ${IMGBB_API_KEY:-11256c78854542733cb29769b5d50316}
     container_name: cinelens-frontend
     ports:
       - "3000:3000"
     environment:
       API_ENDPOINT: http://api:8000/analyze
+      IMGBB_API_KEY: ${IMGBB_API_KEY:-11256c78854542733cb29769b5d50316}
     depends_on:
       - api
 
+  # --- Observability (Grafana + Loki + Promtail) ---
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: promtail
+    volumes:
+      - ./observability/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+
 volumes:
   pgvector_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
+  ml_models:
     driver: local

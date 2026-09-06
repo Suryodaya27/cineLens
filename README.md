@@ -54,12 +54,15 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Worker (python worker.py)                                           │
 │                                                                      │
+│  Pipeline initialized once at startup (reused across all jobs)       │
+│                                                                      │
 │  Main thread:              Background thread:                        │
 │  1. Download image ──────► Scene analysis starts (Ollama)            │
-│  2. Init YOLO+InsightFace   │ (runs while steps 3-5 use CPU)        │
+│  2. AI models ready         │ (runs while steps 3-5 use CPU)        │
 │  3. TMDB cast lookup        │                                        │
-│  4. YOLO detection          │                                        │
-│  5. Face match (pgvector)   │                                        │
+│  4. YOLO detection          │ (non-person objects only)              │
+│  5. InsightFace direct ─────┤ (faces on full image, no YOLO crops)  │
+│     → pgvector match        │                                        │
 │  6. .join() ◄───────────────┘                                        │
 │  7. Person/object vision analysis (with scene context)               │
 │  8. Reclassify misdetected objects                                   │
@@ -92,6 +95,8 @@ cinelens-worker┘                 └─ Promtail
 **Parallel scene analysis** — Scene analysis (Ollama, 30-60s) starts immediately after image download and runs in a background thread while TMDB lookup, YOLO detection, and face matching happen on the main thread. Saves 10-15s of wall time.
 
 **Scene-context injection** — YOLO only knows 80 COCO classes and often misclassifies objects (gun → cell phone, armor → vehicle). The scene analysis result is injected into each object's vision prompt so the LLM can override YOLO's label.
+
+**Hybrid detection** — YOLO detects non-person objects (80 COCO classes). InsightFace detects faces directly on the full image — each face gets its own embedding without overlapping bounding boxes from nearby people. This split avoids the "two people in one crop" problem that YOLO-based person cropping causes in group shots.
 
 **Post-vision reclassification** — After the vision model describes each object, a keyword check moves misclassified items to the correct UI category (e.g. "Iron Man Armored Suit" moves from Vehicles to Other Objects).
 

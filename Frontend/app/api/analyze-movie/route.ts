@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 				image_url: imageBBUrl,
 				movie_name: movieName,
 				enable_vision: 1,
-				similarity_threshold: 0.5,
+				similarity_threshold: 0.45,
 				max_cast: 10,
 			}),
 		})

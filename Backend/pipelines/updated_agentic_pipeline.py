@@ -799,6 +799,78 @@ class UpdatedAgenticPipeline:
         y2 = min(h, y2 + pad_y)
         
         return img[y1:y2, x1:x2]
+
+    def detect_faces_direct(self, image_path: str, output_dir: str,
+                            cast_actor_ids: List[int],
+                            similarity_threshold: float = 0.6) -> List[Dict]:
+        """Detect and identify faces directly with InsightFace on the full image.
+
+        Returns a list of person dicts (same schema as the YOLO-based flow)
+        with one entry per detected face.
+        """
+        img = cv2.imread(image_path)
+        if img is None:
+            logger.error("Could not read image for face detection", extra={"step": "identify"})
+            return []
+
+        faces = self.face_recognizer.app.get(img)
+        logger.info("InsightFace detected faces", extra={"step": "identify", "count": len(faces)})
+
+        if not faces:
+            return []
+
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        input_name = Path(image_path).stem
+        h, w = img.shape[:2]
+
+        people = []
+        for idx, face in enumerate(faces, 1):
+            # Crop face region with padding for the vision model
+            x1, y1, x2, y2 = [int(c) for c in face.bbox]
+            fw, fh = x2 - x1, y2 - y1
+            pad = 0.6  # generous padding so crop shows upper body / clothing
+            cx1 = max(0, int(x1 - fw * pad))
+            cy1 = max(0, int(y1 - fh * pad))
+            cx2 = min(w, int(x2 + fw * pad))
+            cy2 = min(h, int(y2 + fh * 1.5))  # more padding below for body
+            cropped = img[cy1:cy2, cx1:cx2]
+
+            crop_filename = f"{input_name}_person_{idx}.png"
+            crop_path = output_path / crop_filename
+            cv2.imwrite(str(crop_path), cropped)
+
+            # Match embedding against cast
+            embedding = face.embedding
+            matches = self.db.search_similar(
+                embedding,
+                actor_ids=cast_actor_ids,
+                threshold=similarity_threshold,
+                limit=5,
+                debug=True
+            )
+            match = matches[0] if matches else None
+
+            det_confidence = float(face.det_score) if hasattr(face, 'det_score') else 1.0
+
+            people.append({
+                'match': match,
+                'crop_path': str(crop_path),
+                'detection_confidence': det_confidence,
+                'bbox': (x1, y1, x2, y2),
+            })
+
+            if match:
+                logger.info("Person identified", extra={
+                    "step": "identify", "actor": match['actor_name'],
+                    "detail": f"{match['confidence']}%"
+                })
+            else:
+                logger.info("Person not matched", extra={
+                    "step": "identify", "detail": f"person {idx} below threshold"
+                })
+
+        return people
     
     def identify_person(self, cropped_image: np.ndarray, cast_actor_ids: List[int],
                        similarity_threshold: float = 0.6, debug: bool = True) -> Optional[Dict]:

@@ -52,20 +52,26 @@ def publish(r: redis.Redis, job_id: str, event: str, data: dict):
 
 
 def download_image(url: str, save_path: Path) -> bool:
-    """Download image from URL."""
+    """Download image from URL with retry."""
     import requests
-    try:
-        # ponytail: verify=False because corporate Cisco Umbrella proxy re-signs certs.
-        # Proper fix: add Umbrella root CA to the image. This is a hackathon workaround.
-        resp = requests.get(str(url), timeout=30, stream=True, verify=False)
-        resp.raise_for_status()
-        with open(save_path, 'wb') as f:
-            for chunk in resp.iter_content(8192):
-                f.write(chunk)
-        return True
-    except Exception as e:
-        logger.error("Image download failed", extra={"error": str(e), "image_url": str(url)})
-        return False
+    # ponytail: verify=False because corporate Cisco Umbrella proxy re-signs certs.
+    # Proper fix: add Umbrella root CA to the image. This is a hackathon workaround.
+    for attempt in range(3):
+        try:
+            resp = requests.get(str(url), timeout=60, stream=True, verify=False)
+            resp.raise_for_status()
+            with open(save_path, 'wb') as f:
+                for chunk in resp.iter_content(8192):
+                    f.write(chunk)
+            return True
+        except Exception as e:
+            if attempt < 2:
+                logger.warning("Image download failed, retrying", extra={"error": str(e), "detail": f"attempt {attempt + 2}/3"})
+                time.sleep(2)
+            else:
+                logger.error("Image download failed", extra={"error": str(e), "image_url": str(url)})
+    return False
+
 
 
 def upload_to_imgbb(image_path: str, api_key: str) -> Optional[str]:
@@ -202,39 +208,40 @@ def process_job(r: redis.Redis, job_id: str, params: dict, pipeline: UpdatedAgen
                 "done": True
             })
 
-            # Step 4: Detect
+            # Step 4: Detect objects (YOLO for non-person objects only)
             publish(r, job_id, "progress", {"step": "detect", "message": "Detecting objects with YOLO..."})
             logger.info("Running YOLO detection", extra={"step": "detect"})
             all_detections = pipeline.detect_all_objects(str(image_path))
             total = sum(len(v) for v in all_detections.values())
-            people_count = len(all_detections['people'])
-            logger.info("Detection complete", extra={"step": "detect", "count": total, "detail": f"{people_count} people"})
+            logger.info("Detection complete", extra={"step": "detect", "count": total})
             publish(r, job_id, "progress", {
                 "step": "detect",
-                "message": f"Detected {total} objects ({people_count} people)",
+                "message": f"Detected {total} objects",
                 "done": True
             })
 
-            # Step 5: Identify people
+            # Step 5: Identify people — InsightFace directly on full image (no YOLO crops)
             output_path = Path(str(temp_output_dir))
+            publish(r, job_id, "progress", {"step": "identify", "message": "Detecting and identifying faces..."})
+            logger.info("Running InsightFace on full image", extra={"step": "identify"})
+
+            face_results = pipeline.detect_faces_direct(
+                str(image_path), str(output_path),
+                cast_actor_ids, similarity_threshold
+            )
+
+            people_count = len(face_results)
+            logger.info("Face detection complete", extra={"step": "identify", "count": people_count})
+
             identified_people = []
-
-            for idx, detection in enumerate(all_detections['people'], 1):
-                publish(r, job_id, "progress", {"step": "identify", "message": f"Identifying person {idx}/{people_count}..."})
-                logger.info("Identifying person", extra={"step": "identify", "detail": f"{idx}/{people_count}"})
-
-                cropped = pipeline.crop_person(str(image_path), detection['bbox'])
-                input_name = Path(str(image_path)).stem
-                crop_filename = f"{input_name}_person_{idx}.png"
-                crop_path = output_path / crop_filename
-                cv2.imwrite(str(crop_path), cropped)
-
-                match = pipeline.identify_person(cropped, cast_actor_ids, similarity_threshold)
+            for idx, fr in enumerate(face_results, 1):
+                match = fr['match']
+                crop_path = fr['crop_path']
 
                 vision_details = {}
                 if pipeline.use_vision_analysis:
                     publish(r, job_id, "progress", {"step": "identify", "message": f"Analyzing person {idx}/{people_count} with vision model..."})
-                    vision_details = pipeline.analyze_person_details(str(crop_path))
+                    vision_details = pipeline.analyze_person_details(crop_path)
 
                 if match:
                     cast_member = next((m for m in movie_context['cast'] if m['id'] == match['actor_id']), None)
@@ -255,10 +262,9 @@ def process_job(r: redis.Redis, job_id: str, params: dict, pipeline: UpdatedAgen
                         'expression': vision_details.get('expression', 'Not analyzed'),
                         'held_items': vision_details.get('held_items', []),
                         'object_class': 'person',
-                        'crop_image': str(crop_path),
-                        'detection_confidence': detection['confidence']
+                        'crop_image': crop_path,
+                        'detection_confidence': fr['detection_confidence']
                     }
-                    logger.info("Person identified", extra={"step": "identify", "actor": match['actor_name'], "detail": f"{match['confidence']}%"})
                     publish(r, job_id, "progress", {
                         "step": "identify",
                         "message": f"Identified: {match['actor_name']} ({match['confidence']}%)",
@@ -273,16 +279,21 @@ def process_job(r: redis.Redis, job_id: str, params: dict, pipeline: UpdatedAgen
                                      'style': 'Not analyzed', 'accessories': []},
                         'pose': 'Not analyzed', 'expression': 'Not analyzed',
                         'held_items': [], 'object_class': 'person',
-                        'crop_image': str(crop_path),
-                        'detection_confidence': detection['confidence']
+                        'crop_image': crop_path,
+                        'detection_confidence': fr['detection_confidence']
                     }
-                    logger.info("Person not matched", extra={"step": "identify", "detail": f"person {idx} below threshold"})
                     publish(r, job_id, "progress", {
                         "step": "identify",
                         "message": f"Person {idx}: unknown (no match above threshold)",
                         "done": True
                     })
                 identified_people.append(person_data)
+
+            publish(r, job_id, "progress", {
+                "step": "identify",
+                "message": f"Identified {len([p for p in identified_people if p['name']])} of {people_count} people",
+                "done": True
+            })
 
             # Step 6: Scene analysis — wait for background thread to finish
             publish(r, job_id, "progress", {"step": "scene", "message": "Analyzing scene..."})

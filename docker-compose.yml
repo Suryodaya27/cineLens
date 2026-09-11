@@ -61,8 +61,16 @@ services:
       REDIS_URL: redis://redis:6379/0
       OLLAMA_HOST: http://host.docker.internal:11434
       LLM_REPLAY_HOST: http://host.docker.internal:11435
+      REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     volumes:
       - ml_models:/ml_cache
+      - insightface_cache:/root/.insightface
+    deploy:
+      resources:
+        limits:
+          memory: 4g
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,6 +89,8 @@ services:
       - "3000:3000"
     environment:
       API_ENDPOINT: http://api:8000/analyze
+      MORE_MOVIES_API: http://api:8000/api/more-movies
+      SHOPPING_API: http://api:8000/api/shopping-recommendations
       IMGBB_API_KEY: ${IMGBB_API_KEY:-11256c78854542733cb29769b5d50316}
     depends_on:
       - api
@@ -130,4 +140,6 @@ volumes:
   grafana_data:
     driver: local
   ml_models:
+    driver: local
+  insightface_cache:
     driver: local

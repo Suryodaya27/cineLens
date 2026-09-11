@@ -342,6 +342,17 @@ def process_job(r: redis.Redis, job_id: str, params: dict, pipeline: UpdatedAgen
 
                 # Reclassify objects if vision model disagrees with YOLO's category
                 result = _reclassify_objects(result)
+            else:
+                # Without vision, still include YOLO-detected objects with basic info
+                for det_key in ['products', 'animals', 'vehicles', 'electronics', 'furniture', 'other']:
+                    items = all_detections[det_key]
+                    if items:
+                        out_key = 'other_objects' if det_key == 'other' else det_key
+                        result[out_key] = [{
+                            'object_class': d['class'],
+                            'detection_confidence': d['confidence'],
+                            'crop_image': '',
+                        } for d in items]
 
             # Step 8: Upload crops
             publish(r, job_id, "progress", {"step": "upload", "message": "Uploading cropped images..."})

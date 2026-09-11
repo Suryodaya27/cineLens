@@ -569,6 +569,10 @@ class UpdatedAgenticPipeline:
         furniture_classes = {'chair', 'couch', 'bed', 'dining table', 'toilet', 
                             'potted plant'}
         
+        # Use stricter threshold for people, lower for objects
+        # (small objects in movie frames often have lower YOLO confidence)
+        object_min_confidence = min(min_confidence, 0.3)
+        
         for result in results:
             boxes = result.boxes
             for box in boxes:
@@ -576,7 +580,8 @@ class UpdatedAgenticPipeline:
                 cls_name = result.names[cls_id]
                 confidence = float(box.conf[0])
                 
-                if confidence < min_confidence:
+                threshold = min_confidence if cls_name == 'person' else object_min_confidence
+                if confidence < threshold:
                     continue
                 
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()

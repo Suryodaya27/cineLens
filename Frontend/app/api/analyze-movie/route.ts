@@ -32,12 +32,23 @@ export async function POST(request: NextRequest) {
 		let base64Image: string
 
 		if (imageUrl && !imageFile) {
-			const response = await fetch(imageUrl)
-			if (!response.ok) {
-				throw new Error("Failed to download image")
+			const controller = new AbortController()
+			const timeout = setTimeout(() => controller.abort(), 15000)
+			try {
+				const response = await fetch(imageUrl, {
+					signal: controller.signal,
+					headers: { 'User-Agent': 'Mozilla/5.0' },
+				})
+				clearTimeout(timeout)
+				if (!response.ok) {
+					throw new Error(`Failed to download image: ${response.status}`)
+				}
+				const buffer = await response.arrayBuffer()
+				base64Image = Buffer.from(buffer).toString("base64")
+			} catch (e) {
+				clearTimeout(timeout)
+				throw new Error(`Could not download image from URL: ${e instanceof Error ? e.message : 'timeout'}`)
 			}
-			const buffer = await response.arrayBuffer()
-			base64Image = Buffer.from(buffer).toString("base64")
 		} else if (imageFile) {
 			base64Image = imageFile.split(",")[1]
 		} else {

@@ -43,6 +43,7 @@ Thumbs.db
 *.bmp
 *.webp
 !Frontend/public/**
+!screenshots/**
 
 # Backend data dirs
 Backend/cache/

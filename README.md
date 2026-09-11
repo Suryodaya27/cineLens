@@ -2,7 +2,7 @@
 
 AI-powered movie scene analysis — identify actors, detect objects, analyze scenes, and find shopping links from a single movie frame.
 
-[![Demo](https://img.shields.io/badge/YouTube-Demo-red?logo=youtube)](https://youtu.be/hdk6e16dqUo)
+[![Demo](https://img.shields.io/badge/YouTube-Demo-red?logo=youtube)](https://youtu.be/IJTzVnWbsN0)
 
 ## Highlights
 
@@ -12,7 +12,20 @@ AI-powered movie scene analysis — identify actors, detect objects, analyze sce
 
 - **Action:** Combined YOLOv8 object detection with InsightFace face recognition and pgvector similarity search against TMDB cast embeddings. Added an optional local vision LLM (Ollama) for scene/clothing/object analysis with scene-context injection to correct YOLO misclassifications. Built a Redis job queue + worker architecture so FastAPI acts as a thin gateway while a separate worker handles ML inference, with SSE streaming progress through to the browser. Parallelized scene analysis with cast lookup and detection to reduce wall time.
 
-- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Redis-backed result caching returns identical requests instantly (24h TTL). Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen. Full observability via Grafana + Loki — every job traceable by ID through the entire pipeline with structured JSON logs.
+- **Result:** Actors identified at 74–95% confidence in under 10 seconds (face matching only). Full vision analysis in 2–8 minutes on local hardware with 10-15s saved via parallel scene analysis. Redis-backed result caching returns identical requests instantly (24h TTL). Shopping recommendations via SerpAPI Google Shopping. Live progress UI with 9 streaming steps instead of a blank loading screen.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Input](screenshots/input.png) | ![SSE Progress](screenshots/sse_events.png) |
+| Input panel with movie name + image | Live SSE streaming progress |
+| ![Person Analysis](screenshots/person_analysis.png) | ![Scene Analysis](screenshots/scene_analysis.png) |
+| Actor identification with confidence scores | Scene analysis with setting, mood, lighting |
+| ![Object Analysis](screenshots/object_analysis.png) | ![Shopping](screenshots/shopping_recommendations.png) |
+| Detected objects with vision model descriptions | Shopping recommendations via SerpAPI |
+| ![Full Results](screenshots/full_results.png) | ![Grafana](screenshots/grafana_logs.png) |
+| Complete analysis results | Grafana observability dashboard | Full observability via Grafana + Loki — every job traceable by ID through the entire pipeline with structured JSON logs.
 
 ## Architecture
 
